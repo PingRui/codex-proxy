@@ -50,7 +50,13 @@ function parseArgs(argv) {
 // required by the backend's setPaths() layout or serves the dashboard.
 const PACKAGE_DIRS = ["app", "public", "config", "bin"];
 // Files copied verbatim from the Lite package.
-const PACKAGE_FILES = ["codex-proxy.sh", "THIRD-PARTY-NOTICES.txt"];
+const PACKAGE_FILES = [
+  "codex-proxy.sh",
+  "LICENCE",
+  "NOTICE.md",
+  "THIRD_PARTY_NOTICES.md",
+  "THIRD-PARTY-NOTICES.txt",
+];
 // Container entrypoint shipped with the repo (not part of the Lite package);
 // staged as docker-entrypoint.sh to match what Dockerfile.lite COPYs.
 const REPO_ENTRYPOINT = "lite-entrypoint.sh";
@@ -109,7 +115,7 @@ function main() {
     (name) => !name.endsWith(join("/") === "/" ? "/" : "\\") && basename(String(name)),
   );
   console.log(`[docker-lite] staged ${staged.length} entries into ${options.out}`);
-  console.log("[docker-lite] contents: app public config bin codex-proxy.sh THIRD-PARTY-NOTICES.txt native/ docker-entrypoint.sh");
+  console.log("[docker-lite] contents: app public config bin codex-proxy.sh LICENCE NOTICE.md THIRD_PARTY_NOTICES.md THIRD-PARTY-NOTICES.txt native/ docker-entrypoint.sh");
 }
 
 main();

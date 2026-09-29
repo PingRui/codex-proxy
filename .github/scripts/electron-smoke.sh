@@ -120,9 +120,11 @@ cleanup() {
     pkill -9 -f "Codex-Proxy" 2>/dev/null || true
     pkill -9 -f "xvfb" 2>/dev/null || true
   elif [ "$RUNNER_OS" = "macOS" ]; then
+    pkill -9 -f "NEXORA" 2>/dev/null || true
     pkill -9 -f "Codex Proxy" 2>/dev/null || true
   elif [ "$RUNNER_OS" = "Windows" ]; then
     # Best-effort; tasks may already be gone.
+    taskkill //F //IM "NEXORA.exe" 2>/dev/null || true
     taskkill //F //IM "Codex Proxy.exe" 2>/dev/null || true
   fi
 }

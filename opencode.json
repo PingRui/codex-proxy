@@ -3,7 +3,7 @@
   "provider": {
     "codex-proxy": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Codex Proxy",
+      "name": "NEXORA",
       "options": {
         "baseURL": "http://localhost:8080/v1",
         "apiKey": "pwd"

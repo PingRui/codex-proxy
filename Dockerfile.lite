@@ -35,6 +35,7 @@ COPY config/ ./config/
 COPY bin/ ./bin/
 COPY native/ ./native/
 COPY codex-proxy.sh ./
+COPY LICENCE NOTICE.md THIRD_PARTY_NOTICES.md ./
 COPY THIRD-PARTY-NOTICES.txt ./
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh

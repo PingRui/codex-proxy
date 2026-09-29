@@ -324,6 +324,9 @@ function main() {
   for (const directory of ["config", "public", "bin"]) {
     copyDirectory(resolve(ROOT, directory), join(stage, directory));
   }
+  for (const notice of ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"]) {
+    cpSync(resolve(ROOT, notice), join(stage, notice));
+  }
   cpSync(resolve(SCRIPT_DIR, "THIRD-PARTY-NOTICES.txt"), join(stage, "THIRD-PARTY-NOTICES.txt"));
   mkdirSync(join(stage, "data"), { recursive: true });
   copyRuntimeNative(resolve(ROOT, "native"), join(stage, "native"));

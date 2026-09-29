@@ -1,17 +1,17 @@
-# Claude Code 配置 Codex Proxy 避坑指南
+# Claude Code 配置 NEXORA 避坑指南
 
-> 当你把 Claude Code 指向 Codex Proxy 却发现它死活不走代理时，这份指南能帮你在 5 分钟内定位并修复问题。
+> 当你把 Claude Code 指向 NEXORA 却发现它死活不走代理时，这份指南能帮你在 5 分钟内定位并修复问题。
 
 ## 前置条件
 
 - Claude Code 已安装并能正常启动
-- Codex Proxy 已运行（默认 `http://localhost:8080`）
+- NEXORA 已运行（默认 `http://localhost:8080`）
 - 从 Dashboard 获取了 API Key（Settings → API Key）
 - 终端（Terminal）的基本使用能力
 
 ## 你将学到
 
-- 正确配置 Claude Code 连接 Codex Proxy
+- 正确配置 Claude Code 连接 NEXORA
 - 识别并修复 `ANTHROPIC_AUTH_TOKEN` 导致的代理失效问题
 - 识别并修复 `customApiKeyResponses` 导致的 API key 黑名单问题
 - 设置预防机制，避免再次踩坑
@@ -20,7 +20,7 @@
 
 ## Step 1: 正确的配置方式
 
-配置 Claude Code 使用 Codex Proxy 只需要两个环境变量。
+配置 Claude Code 使用 NEXORA 只需要两个环境变量。
 
 打开终端，输入以下命令查看你的配置文件：
 
@@ -33,7 +33,7 @@ cat ~/.claude/settings.json
 ![Step 1 — 正确的配置文件和环境变量](screenshots/step-01.png)
 
 文件中的 `env` 部分设置了两个变量：
-- **`ANTHROPIC_BASE_URL`** — Codex Proxy 地址（默认 `http://localhost:8080`）
+- **`ANTHROPIC_BASE_URL`** — NEXORA 地址（默认 `http://localhost:8080`）
 - **`ANTHROPIC_API_KEY`** — 从 Dashboard 获取的 proxy API key
 
 > **Tip:** Dashboard 的 **Anthropic SDK Setup** 卡片可一键复制所有环境变量（含 Opus / Sonnet / Haiku 层级模型配置）。推荐模型：Opus → `gpt-5.6-sol`，Sonnet → `gpt-5.6-terra`，Haiku → `gpt-5.6-luna`。
@@ -86,7 +86,7 @@ grep -n ANTHROPIC ~/.zshrc
 
 ![Step 3 — 在 .zshrc 中找到元凶](screenshots/step-03.png)
 
-看到了吗？有一个 `export ANTHROPIC_AUTH_TOKEN=...`。这很可能是你以前使用 Anthropic 官方账号时设置的，后来切换到 Codex Proxy 后忘记删除了。
+看到了吗？有一个 `export ANTHROPIC_AUTH_TOKEN=...`。这很可能是你以前使用 Anthropic 官方账号时设置的，后来切换到 NEXORA 后忘记删除了。
 
 > **Tip:** 如果在 `~/.zshrc` 中没找到，也检查一下 `~/.bashrc`、`~/.zprofile`、`~/.bash_profile` 这几个文件。
 
@@ -124,7 +124,7 @@ env | grep ANTHROPIC
 
 ### Step 5: 发现问题——一切看起来正确但就是不工作
 
-你的环境变量全部正确，用 `curl` 直接测试 Codex Proxy 也返回 200，但 Claude Code 报错：
+你的环境变量全部正确，用 `curl` 直接测试 NEXORA 也返回 200，但 Claude Code 报错：
 
 - `Not logged in · Run /login`
 - 或 `API Error: 403 {"detail":"密码错误"}`
@@ -159,7 +159,7 @@ cat ~/.claude.json | python3 -m json.tool | grep -A5 customApi
 
 ### Step 7: 修复——将 Key 从黑名单移到白名单
 
-在终端中执行以下命令（把 `your-proxy-api-key` 替换成你的 Codex Proxy API key）：
+在终端中执行以下命令（把 `your-proxy-api-key` 替换成你的 NEXORA API key）：
 
 ```bash
 python3 -c "

@@ -23,7 +23,7 @@ function getSharedBridge(): CodexAppServerBridge {
     requestTimeoutMs: config.official_agent.request_timeout_ms,
     clientInfo: {
       name: "codex_proxy",
-      title: "Codex Proxy",
+      title: "NEXORA",
       version: "2.0.69",
     },
   });

@@ -35,13 +35,13 @@ std::wstring wide_from_utf8(const char *value) {
 }
 
 void show_error(const std::wstring &message) {
-  MessageBoxW(nullptr, message.c_str(), L"Codex Proxy WebView2", MB_OK | MB_ICONERROR);
+  MessageBoxW(nullptr, message.c_str(), L"NEXORA WebView2", MB_OK | MB_ICONERROR);
 }
 
 void show_usage() {
   MessageBoxW(nullptr,
               L"Usage: webview2-host.exe --url URL [--title TITLE] [--width N] [--height N]",
-              L"Codex Proxy WebView2", MB_OK | MB_ICONINFORMATION);
+              L"NEXORA WebView2", MB_OK | MB_ICONINFORMATION);
 }
 
 bool parse_positive_int(const std::wstring &value, int &target) {
@@ -66,7 +66,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
   }
 
   std::wstring url;
-  std::wstring title = L"Codex Proxy";
+  std::wstring title = L"NEXORA";
   int width = 1280;
   int height = 900;
 

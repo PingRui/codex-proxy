@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: Codex Proxy
+name: NEXORA
 description: Compact operational dashboard with quiet surfaces, GitHub-like dark mode, emerald primary actions, and dense data cards.
 colors:
   background: "#F8FAFC"
@@ -311,11 +311,11 @@ components:
     padding: "{spacing.card-padding}"
 ---
 
-# Design System: Codex Proxy
+# Design System: NEXORA
 
 ## Overview
 
-Codex Proxy is a compact operational dashboard for managing accounts, proxy routing, API keys, settings, logs, and usage telemetry. The visual identity should feel precise, calm, and engineer-owned: more control room than landing page. The interface should privilege scan speed, status clarity, and repeatable workflows over decorative composition.
+NEXORA is a compact operational dashboard for managing accounts, proxy routing, API keys, settings, logs, and usage telemetry. The visual identity should feel precise, calm, and engineer-owned: more control room than landing page. The interface should privilege scan speed, status clarity, and repeatable workflows over decorative composition.
 
 The default feeling is restrained and utilitarian. Pages sit on a very light slate field in light mode and a GitHub-like near-black field in dark mode. Cards are clean white or graphite panels with thin borders, small radii, and soft shadows. The primary accent is a contrast-safe emerald system: deep emerald for readable light-mode text and solid actions, brighter mint-emerald for dark-mode text, and pale or dim containers for selected states.
 

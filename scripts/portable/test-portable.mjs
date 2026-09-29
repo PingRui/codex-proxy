@@ -206,6 +206,11 @@ function archiveContract(entries, extract, options) {
   );
 
   const manifest = JSON.parse(readFileSync(join(extract, "app", "manifest.json"), "utf8"));
+  for (const notice of ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"]) {
+    assert(files.has(notice), "Portable archive is missing distribution notice: " + notice);
+    assert(readFileSync(join(extract, notice), "utf8").trim().length > 0,
+      "Portable distribution notice is empty: " + notice);
+  }
   assert(manifest.name === "codex-proxy-lite", "Lite manifest has an unexpected name: " + manifest.name);
   assert(typeof manifest.version === "string" && manifest.version.length > 0, "Lite manifest has no version");
   const versionMatch = /^codex-proxy-(.+)-no-node-lite-all-platforms\.zip$/i.exec(basename(options.archive));

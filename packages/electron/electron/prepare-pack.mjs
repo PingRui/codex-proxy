@@ -14,6 +14,7 @@ const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const PKG = resolve(import.meta.dirname, "..");
 
 const DIRS = ["config", "public", "bin"];
+const DISTRIBUTION_NOTICES = ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"];
 const isClean = process.argv.includes("--clean");
 
 for (const dir of DIRS) {
@@ -36,6 +37,24 @@ for (const dir of DIRS) {
     }
     cpSync(src, dest, { recursive: true });
     console.log(`[prepare-pack] copied ${dir}/ → packages/electron/${dir}/`);
+  }
+}
+
+for (const file of DISTRIBUTION_NOTICES) {
+  const src = resolve(ROOT, file);
+  const dest = resolve(PKG, file);
+
+  if (isClean) {
+    if (existsSync(dest)) {
+      rmSync(dest);
+      console.log(`[prepare-pack] removed ${file}`);
+    }
+  } else {
+    if (!existsSync(src)) {
+      throw new Error(`[prepare-pack] required distribution notice missing: ${src}`);
+    }
+    cpSync(src, dest, { force: true });
+    console.log(`[prepare-pack] copied ${file} → packages/electron/${file}`);
   }
 }
 

@@ -121,6 +121,17 @@ describe("electron-builder.yml", () => {
     expect(globs).toContain("public/**/*");
   });
 
+  it("ships distribution notices both in the app and as readable resources", () => {
+    const notices = ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"];
+    const globs = config.files.filter((f): f is string => typeof f === "string");
+
+    for (const notice of notices) {
+      expect(existsSync(resolve(ROOT_DIR, notice))).toBe(true);
+      expect(globs).toContain(notice);
+      expect(config.extraResources).toContainEqual({ from: notice, to: notice });
+    }
+  });
+
   it("root source directories for prepare-pack actually exist", () => {
     // prepare-pack.mjs copies these from root before packing
     const requiredDirs = ["config", "public", "bin"];

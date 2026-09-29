@@ -103,5 +103,5 @@ try {
     Write-Host "Stopping app (pid=$($Process.Id))"
     Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue
   }
-  Get-Process "Codex Proxy" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  Get-Process "NEXORA", "Codex Proxy" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }

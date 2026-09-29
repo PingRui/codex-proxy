@@ -18,6 +18,7 @@ const SCRIPT = resolve(PKG_DIR, "electron", "prepare-pack.mjs");
 
 // Directories that prepare-pack copies from root into packages/electron/
 const DIRS = ["config", "public", "bin"];
+const DISTRIBUTION_NOTICES = ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"];
 
 describe("prepare-pack.mjs", () => {
   let releaseLock: (() => void) | null = null;
@@ -34,6 +35,10 @@ describe("prepare-pack.mjs", () => {
       if (existsSync(dest) && resolve(dest) !== resolve(ROOT_DIR, dir)) {
         rmSync(dest, { recursive: true });
       }
+    }
+    for (const file of DISTRIBUTION_NOTICES) {
+      const dest = resolve(PKG_DIR, file);
+      if (existsSync(dest)) rmSync(dest);
     }
   }
 
@@ -69,6 +74,17 @@ describe("prepare-pack.mjs", () => {
     }
   });
 
+  it("copies the complete distribution notices with unchanged content", () => {
+    execFileSync("node", [SCRIPT], { cwd: PKG_DIR });
+
+    for (const file of DISTRIBUTION_NOTICES) {
+      const source = resolve(ROOT_DIR, file);
+      const copy = resolve(PKG_DIR, file);
+      expect(existsSync(copy)).toBe(true);
+      expect(readFileSync(copy, "utf-8")).toBe(readFileSync(source, "utf-8"));
+    }
+  });
+
   it("--clean removes copied directories", () => {
     // First copy
     execFileSync("node", [SCRIPT], { cwd: PKG_DIR });
@@ -82,6 +98,9 @@ describe("prepare-pack.mjs", () => {
 
     for (const dir of DIRS) {
       expect(existsSync(resolve(PKG_DIR, dir))).toBe(false);
+    }
+    for (const file of DISTRIBUTION_NOTICES) {
+      expect(existsSync(resolve(PKG_DIR, file))).toBe(false);
     }
   });
 

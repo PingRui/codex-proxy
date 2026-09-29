@@ -77,7 +77,7 @@ describe("CodexAppServerClient", () => {
     const client = new CodexAppServerClient({
       url: server.url,
       auth: { type: "none" },
-      clientInfo: { name: "codex_proxy", title: "Codex Proxy", version: "test" },
+      clientInfo: { name: "codex_proxy", title: "NEXORA", version: "test" },
       requestTimeoutMs: 1000,
     });
 
@@ -103,7 +103,7 @@ describe("CodexAppServerClient", () => {
     const client = new CodexAppServerClient({
       url: server.url,
       auth: { type: "none" },
-      clientInfo: { name: "codex_proxy", title: "Codex Proxy", version: "test" },
+      clientInfo: { name: "codex_proxy", title: "NEXORA", version: "test" },
       requestTimeoutMs: 1000,
     });
 
@@ -133,7 +133,7 @@ describe("CodexAppServerClient", () => {
     const client = new CodexAppServerClient({
       url: server.url,
       auth: { type: "none" },
-      clientInfo: { name: "codex_proxy", title: "Codex Proxy", version: "test" },
+      clientInfo: { name: "codex_proxy", title: "NEXORA", version: "test" },
       requestTimeoutMs: 1000,
     });
 
@@ -169,7 +169,7 @@ describe("CodexAppServerClient", () => {
     const client = new CodexAppServerClient({
       url: server.url,
       auth: { type: "none" },
-      clientInfo: { name: "codex_proxy", title: "Codex Proxy", version: "test" },
+      clientInfo: { name: "codex_proxy", title: "NEXORA", version: "test" },
       requestTimeoutMs: 1000,
     });
 
@@ -205,7 +205,7 @@ describe("CodexAppServerClient", () => {
     const client = new CodexAppServerClient({
       url: server.url,
       auth: { type: "none" },
-      clientInfo: { name: "codex_proxy", title: "Codex Proxy", version: "test" },
+      clientInfo: { name: "codex_proxy", title: "NEXORA", version: "test" },
       requestTimeoutMs: 1000,
     });
 
@@ -264,7 +264,7 @@ describe("CodexAppServerClient", () => {
     const client = new CodexAppServerClient({
       url: server.url,
       auth: { type: "none" },
-      clientInfo: { name: "codex_proxy", title: "Codex Proxy", version: "test" },
+      clientInfo: { name: "codex_proxy", title: "NEXORA", version: "test" },
       requestTimeoutMs: 1000,
     });
 

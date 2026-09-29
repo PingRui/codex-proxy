@@ -243,7 +243,7 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
 
   console.log(`
 ╔══════════════════════════════════════════╗
-║           Codex Proxy Server             ║
+║              NEXORA Server               ║
 ╠══════════════════════════════════════════╣
 ║  Status: ${accountPool.isAuthenticated() ? "Authenticated ✓" : "Not logged in  "}             ║
 ║  Listen: http://${displayHost}:${port}              ║

@@ -76,6 +76,11 @@ describe("release pipeline", () => {
     expect(existsSync(resolve(PKG_DIR, "dist-electron", "server.mjs"))).toBe(true);
     expect(existsSync(resolve(PKG_DIR, "electron", "assets", "icon.png"))).toBe(true);
     expect(existsSync(resolve(PKG_DIR, "package.json"))).toBe(true);
+    for (const notice of ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"]) {
+      expect(readFileSync(resolve(PKG_DIR, notice), "utf-8")).toBe(
+        readFileSync(resolve(ROOT_DIR, notice), "utf-8"),
+      );
+    }
   });
 
   it("version is consistent between root and electron package", () => {

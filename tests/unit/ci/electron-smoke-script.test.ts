@@ -80,6 +80,7 @@ describe("electron-smoke.sh script", () => {
     expect(source).toContain("Start-Process");
     expect(source).toContain("Invoke-WebRequest");
     expect(source).toContain("Stop-Process");
+    expect(source).toContain('Get-Process "NEXORA", "Codex Proxy"');
   });
 });
 
@@ -92,6 +93,14 @@ describeIfBash("electron-smoke.sh script bash behavior", () => {
     expect(() =>
       execFileSync("bash", ["-n", SCRIPT], { stdio: "pipe" }),
     ).not.toThrow();
+  });
+
+  it("cleans both the NEXORA process and the legacy process name", () => {
+    const source = readFileSync(SCRIPT, "utf-8");
+    expect(source).toContain('pkill -9 -f "NEXORA"');
+    expect(source).toContain('pkill -9 -f "Codex Proxy"');
+    expect(source).toContain('taskkill //F //IM "NEXORA.exe"');
+    expect(source).toContain('taskkill //F //IM "Codex Proxy.exe"');
   });
 
   it("fails loudly when RUNNER_OS is unset", () => {

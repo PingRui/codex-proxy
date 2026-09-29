@@ -18,7 +18,7 @@ export function buildPrompt(tag, commits, changelogExcerpt) {
   const changelogSection = changelogExcerpt
     ? `\n\nBackground from the project CHANGELOG (use only entries matching the commits above; it may describe unrelated work):\n${changelogExcerpt}`
     : "";
-  return `You are writing GitHub release notes for ${tag} of Codex Proxy, a desktop app (Electron) that lets users connect coding clients to their ChatGPT account. The audience is END USERS of the desktop app — not developers of this repo.
+  return `You are writing GitHub release notes for ${tag} of NEXORA, a desktop app (Electron) that lets users connect coding clients to their ChatGPT account. The audience is END USERS of the desktop app — not developers of this repo.
 
 Commits in this release:
 ${commits.join("\n")}${changelogSection}

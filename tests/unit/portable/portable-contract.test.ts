@@ -93,6 +93,8 @@ describe("No-Node Lite distribution contract", () => {
     expect(nativeSource).toContain("CreateMutexW");
     expect(nativeSource).toContain("FindWindowExW");
     expect(nativeSource).toContain("TRAY_ACTIVATE_INSTANCE");
+    expect(nativeSource).toContain('L"NEXORA"');
+    expect(nativeSource).not.toContain('L"Codex Proxy"');
   });
 
   it("packages only runtime native files and creates a zip archive", () => {
@@ -124,6 +126,9 @@ describe("No-Node Lite distribution contract", () => {
     expect(source).toContain("-luser32");
     expect(source).toContain("-lshell32");
     expect(source).toContain('join(stage, "codex-proxy.cmd")');
+    for (const notice of ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"]) {
+      expect(source).toContain(`resolve(ROOT, notice), join(stage, notice)`);
+    }
     expect(source).toContain("always included");
     expect(source).toContain("createZip");
     expect(source).toContain("python-zipfile");
@@ -138,6 +143,9 @@ describe("No-Node Lite distribution contract", () => {
     expect(source).toContain("CODEX_PROXY_READY=");
     expect(source).toContain("--portable");
     expect(source).toContain("--test-native-launcher");
+    expect(source).toContain('"LICENCE"');
+    expect(source).toContain('"NOTICE.md"');
+    expect(source).toContain('"THIRD_PARTY_NOTICES.md"');
     expect(source).toContain("expected 200");
     expect(source).toContain("launcherRuntimeSmoke");
     expect(source).toContain("waitForHttpReady");

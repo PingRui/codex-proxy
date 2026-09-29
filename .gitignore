@@ -12,6 +12,10 @@ bin/*
 !bin/README.md
 .env
 *.log
+run-logs*.txt
+auth.json
+auth.json.bak*
+cookies.json
 .asar-out/
 tmp/
 .claude/*

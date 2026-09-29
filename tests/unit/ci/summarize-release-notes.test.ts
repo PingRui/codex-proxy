@@ -120,6 +120,12 @@ describe("summarize-release-notes generateNotes", () => {
     expect(prompt).toContain("修复某问题");
     expect(prompt).toContain("highlights_zh");
   });
+
+  it("identifies the release as NEXORA", () => {
+    const prompt = buildPrompt("v1.0.0", ["- fix: a"], "");
+    expect(prompt).toContain("of NEXORA");
+    expect(prompt).not.toContain("of Codex Proxy");
+  });
 });
 
 describe("summarize-release-notes resolveRequestTimeoutMs", () => {

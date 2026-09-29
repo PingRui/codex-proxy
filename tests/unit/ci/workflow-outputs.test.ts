@@ -125,6 +125,22 @@ describe("workflow output references are satisfied", () => {
     expect(ciDocker).toContain("Docker version mismatch");
   });
 
+  it("full and lite Docker images ship distribution notices", () => {
+    const notices = ["LICENCE", "NOTICE.md", "THIRD_PARTY_NOTICES.md"];
+    const dockerfile = readFileSync(DOCKERFILE, "utf8");
+    const liteDockerfile = readFileSync(LITE_DOCKERFILE, "utf8");
+    const dockerIgnore = readFileSync(resolve(ROOT, ".dockerignore"), "utf8");
+    const liteStage = readFileSync(resolve(ROOT, "scripts", "docker", "stage-lite.mjs"), "utf8");
+
+    for (const notice of notices) {
+      expect(dockerfile).toContain(notice);
+      expect(liteDockerfile).toContain(notice);
+      expect(liteStage).toContain(`"${notice}"`);
+    }
+    expect(dockerIgnore).toContain("!NOTICE.md");
+    expect(dockerIgnore).toContain("!THIRD_PARTY_NOTICES.md");
+  });
+
   it("docker-publish-lite shares the resolved version across the manifest and image", () => {
     const workflow = loadWorkflow("docker-publish.yml");
     const job = workflow.jobs["publish-lite"];

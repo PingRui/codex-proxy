@@ -55,6 +55,7 @@ RUN cd web && npm ci
 
 # 3) Copy source
 COPY . .
+COPY LICENCE NOTICE.md THIRD_PARTY_NOTICES.md ./
 
 # Release tags are authoritative for Docker images, while package.json on the
 # tagged master commit may intentionally lag behind under the tag-only release

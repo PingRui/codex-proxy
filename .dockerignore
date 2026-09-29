@@ -8,6 +8,8 @@ tmp/
 docs/
 stitch-*/
 *.md
+!NOTICE.md
+!THIRD_PARTY_NOTICES.md
 .env
 .env.*
 scripts/poc-*

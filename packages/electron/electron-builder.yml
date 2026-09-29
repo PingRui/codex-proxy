@@ -22,6 +22,9 @@ files:
   - config/**/*
   - public/**/*
   - electron/assets/**/*
+  - LICENCE
+  - NOTICE.md
+  - THIRD_PARTY_NOTICES.md
   - package.json
   - "!node_modules"
   - "!dist"
@@ -42,6 +45,12 @@ extraResources:
     to: native/
     filter:
       - "**/*"
+  - from: LICENCE
+    to: LICENCE
+  - from: NOTICE.md
+    to: NOTICE.md
+  - from: THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
 
 win:
   # Keep unsigned local builds reproducible on Windows machines where creating

@@ -80,7 +80,7 @@ export function createWebRoutes(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[Web] Failed to read HTML file: ${msg}`);
-      return c.html("<h1>Codex Proxy</h1><p>UI files not found. Run 'npm run build:web' first. The API is still available at /v1/chat/completions</p>");
+      return c.html("<h1>NEXORA</h1><p>UI files not found. Run 'npm run build:web' first. The API is still available at /v1/chat/completions</p>");
     }
   });
 

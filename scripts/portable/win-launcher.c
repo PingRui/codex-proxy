@@ -102,7 +102,7 @@ static void show_node_help(DWORD error_code) {
     wchar_t message[4096];
     _snwprintf_s(
         message, sizeof(message) / sizeof(message[0]), _TRUNCATE,
-        L"Codex Proxy could not start Node.js (Windows error %lu).\n\n"
+        L"NEXORA could not start Node.js (Windows error %lu).\n\n"
         L"This portable package does not include Node.js. Install Node.js 20 or newer,\n"
         L"or select an existing executable with:\n\n"
         L"  set CODEX_PROXY_NODE=C:\\Path\\to\\node.exe\n"
@@ -111,7 +111,7 @@ static void show_node_help(DWORD error_code) {
         L"  node app\\server.mjs --mode auto\n\n"
         L"Open the official Node.js download page now? (15 seconds)",
         error_code);
-    if (show_timeout_message(message, L"Codex Proxy - Node.js required", MB_YESNO | MB_ICONWARNING) == IDYES) {
+    if (show_timeout_message(message, L"NEXORA - Node.js required", MB_YESNO | MB_ICONWARNING) == IDYES) {
         ShellExecuteW(NULL, L"open", NODE_DOWNLOAD_URL, NULL, NULL, SW_SHOWNORMAL);
     }
 }
@@ -260,7 +260,7 @@ static int start_webview2_host(void) {
         _snwprintf_s(message, sizeof(message) / sizeof(message[0]), _TRUNCATE,
                      L"The packaged WebView2 host could not be started (Windows error %lu).",
                      GetLastError());
-        show_timeout_message(message, L"Codex Proxy - WebView2 Error", MB_OK | MB_ICONERROR);
+        show_timeout_message(message, L"NEXORA - WebView2 Error", MB_OK | MB_ICONERROR);
         return 0;
     }
     webview2_process = process.hProcess;
@@ -271,7 +271,7 @@ static int start_webview2_host(void) {
         webview2_process = NULL;
         show_timeout_message(
             L"The WebView2 host could not be attached to the portable process group.",
-            L"Codex Proxy - WebView2 Error", MB_OK | MB_ICONERROR);
+            L"NEXORA - WebView2 Error", MB_OK | MB_ICONERROR);
         return 0;
     }
     return 1;
@@ -287,13 +287,13 @@ static void open_dashboard(void) {
     } else {
         show_timeout_message(
             L"The local server is still starting. Please try the tray menu again in a moment.",
-            L"Codex Proxy", MB_OK | MB_ICONINFORMATION);
+            L"NEXORA", MB_OK | MB_ICONINFORMATION);
     }
 }
 
 static int activate_existing_instance(void) {
     for (int attempt = 0; attempt < 10; ++attempt) {
-        HWND existing = FindWindowExW(HWND_MESSAGE, NULL, TRAY_CLASS_NAME, L"Codex Proxy");
+        HWND existing = FindWindowExW(HWND_MESSAGE, NULL, TRAY_CLASS_NAME, L"NEXORA");
         if (existing) {
             PostMessageW(existing, TRAY_ACTIVATE_INSTANCE, 0, 0);
             return 1;
@@ -323,7 +323,7 @@ static void release_single_instance(void) {
 static void show_tray_menu(void) {
     HMENU menu = CreatePopupMenu();
     if (!menu) return;
-    AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, L"Codex Proxy");
+    AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, L"NEXORA");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(
         menu,
@@ -395,7 +395,7 @@ static int install_tray(void) {
     if (!RegisterClassW(&window_class) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) return 0;
 
     tray_window = CreateWindowExW(
-        0, TRAY_CLASS_NAME, L"Codex Proxy", 0, 0, 0, 0, 0,
+        0, TRAY_CLASS_NAME, L"NEXORA", 0, 0, 0, 0, 0,
         HWND_MESSAGE, NULL, window_class.hInstance, NULL);
     if (!tray_window) return 0;
 
@@ -407,7 +407,7 @@ static int install_tray(void) {
     tray_icon.uCallbackMessage = TRAY_CALLBACK_MESSAGE;
     tray_icon.hIcon = LoadIconW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(IDI_APP_ICON));
     if (!tray_icon.hIcon) tray_icon.hIcon = LoadIconW(NULL, IDI_APPLICATION);
-    wcsncpy(tray_icon.szTip, L"Codex Proxy", sizeof(tray_icon.szTip) / sizeof(tray_icon.szTip[0]) - 1);
+    wcsncpy(tray_icon.szTip, L"NEXORA", sizeof(tray_icon.szTip) / sizeof(tray_icon.szTip[0]) - 1);
     tray_icon.szTip[sizeof(tray_icon.szTip) / sizeof(tray_icon.szTip[0]) - 1] = L'\0';
     if (!Shell_NotifyIconW(NIM_ADD, &tray_icon)) {
         DestroyWindow(tray_window);
@@ -514,7 +514,7 @@ static void offer_webview2_install(const wchar_t *root) {
             question, sizeof(question) / sizeof(question[0]), _TRUNCATE,
             L"WebView2 Runtime is required for the requested mode but is not installed.\n\n"
             L"Run the packaged online installer now? (15 seconds)");
-        if (show_timeout_message(question, L"Codex Proxy - WebView2 required", MB_YESNO | MB_ICONWARNING) != IDYES) return;
+        if (show_timeout_message(question, L"NEXORA - WebView2 required", MB_YESNO | MB_ICONWARNING) != IDYES) return;
 
         wchar_t command[8192];
         size_t command_length = 0;
@@ -530,11 +530,11 @@ static void offer_webview2_install(const wchar_t *root) {
             CloseHandle(process.hProcess);
             show_timeout_message(
                 L"The WebView2 installer has finished. Start codex-proxy.exe again to use WebView2.",
-                L"Codex Proxy", MB_OK | MB_ICONINFORMATION);
+                L"NEXORA", MB_OK | MB_ICONINFORMATION);
         } else {
             show_timeout_message(
                 L"The WebView2 installer could not be started. Use the official WebView2 installation page instead.",
-                L"Codex Proxy - WebView2 required", MB_OK | MB_ICONWARNING);
+                L"NEXORA - WebView2 required", MB_OK | MB_ICONWARNING);
             ShellExecuteW(NULL, L"open", L"https://developer.microsoft.com/microsoft-edge/webview2/",
                           NULL, NULL, SW_SHOWNORMAL);
         }
@@ -544,7 +544,7 @@ static void offer_webview2_install(const wchar_t *root) {
     if (show_timeout_message(
             L"WebView2 Runtime is required for the requested mode but is not installed.\n\n"
             L"Open the official WebView2 installation page now? (15 seconds)",
-            L"Codex Proxy - WebView2 required", MB_YESNO | MB_ICONWARNING) == IDYES) {
+            L"NEXORA - WebView2 required", MB_YESNO | MB_ICONWARNING) == IDYES) {
         ShellExecuteW(NULL, L"open", L"https://developer.microsoft.com/microsoft-edge/webview2/",
                       NULL, NULL, SW_SHOWNORMAL);
     }
@@ -569,19 +569,19 @@ static void show_child_failure(const wchar_t *root, DWORD exit_code) {
     } else {
         detail[converted] = L'\0';
     }
-    show_timeout_message(detail, L"Codex Proxy - Startup Error", MB_OK | MB_ICONERROR);
+    show_timeout_message(detail, L"NEXORA - Startup Error", MB_OK | MB_ICONERROR);
 }
 
 int wmain(int argc, wchar_t **argv) {
     wchar_t root[MAX_PATH * 4];
     DWORD length = GetModuleFileNameW(NULL, root, (DWORD)(sizeof(root) / sizeof(root[0])));
     if (length == 0 || length >= sizeof(root) / sizeof(root[0])) {
-        show_timeout_message(L"Unable to locate codex-proxy.exe.", L"Codex Proxy", MB_OK | MB_ICONERROR);
+        show_timeout_message(L"Unable to locate codex-proxy.exe.", L"NEXORA", MB_OK | MB_ICONERROR);
         return 1;
     }
     wchar_t *slash = wcsrchr(root, L'\\');
     if (!slash) {
-        show_timeout_message(L"Unable to locate the portable package directory.", L"Codex Proxy", MB_OK | MB_ICONERROR);
+        show_timeout_message(L"Unable to locate the portable package directory.", L"NEXORA", MB_OK | MB_ICONERROR);
         return 1;
     }
     *slash = L'\0';
@@ -591,7 +591,7 @@ int wmain(int argc, wchar_t **argv) {
         wchar_t message[512];
         _snwprintf_s(message, sizeof(message) / sizeof(message[0]), _TRUNCATE,
                      L"Unable to enter portable package directory (error %lu).", GetLastError());
-        show_timeout_message(message, L"Codex Proxy", MB_OK | MB_ICONERROR);
+        show_timeout_message(message, L"NEXORA", MB_OK | MB_ICONERROR);
         return 1;
     }
 
@@ -608,7 +608,7 @@ int wmain(int argc, wchar_t **argv) {
     int *skip_arg = (int *)calloc((size_t)argc, sizeof(int));
     if (!skip_arg) {
         release_single_instance();
-        show_timeout_message(L"Unable to allocate launcher argument state.", L"Codex Proxy", MB_OK | MB_ICONERROR);
+        show_timeout_message(L"Unable to allocate launcher argument state.", L"NEXORA", MB_OK | MB_ICONERROR);
         return 1;
     }
     for (int i = 1; i < argc; ++i) {
@@ -620,7 +620,7 @@ int wmain(int argc, wchar_t **argv) {
             continue;
         }
         if ((wcscmp(argv[i], L"--node-path") == 0 || wcscmp(argv[i], L"-n") == 0) && i + 1 >= argc) {
-            show_timeout_message(L"--node-path requires a path.", L"Codex Proxy", MB_OK | MB_ICONWARNING);
+            show_timeout_message(L"--node-path requires a path.", L"NEXORA", MB_OK | MB_ICONWARNING);
             release_single_instance();
             free(skip_arg);
             return 2;
@@ -641,7 +641,7 @@ int wmain(int argc, wchar_t **argv) {
     if (!command) {
         free(skip_arg);
         release_single_instance();
-        show_timeout_message(L"Unable to allocate launcher command state.", L"Codex Proxy", MB_OK | MB_ICONERROR);
+        show_timeout_message(L"Unable to allocate launcher command state.", L"NEXORA", MB_OK | MB_ICONERROR);
         return 1;
     }
     size_t command_length = 0;
