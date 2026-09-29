@@ -1,6 +1,6 @@
 import { createContext, type ComponentChildren } from "preact";
 import { useContext, useEffect, useRef, useState } from "preact/hooks";
-import { APP_BRAND, APP_DESCRIPTOR, APP_DISPLAY_NAME, APP_REPOSITORY_URL } from "../../shared/brand";
+import { APP_BRAND, APP_DESCRIPTOR } from "../../shared/brand";
 import { I18nProvider, useI18n } from "../../shared/i18n/context";
 import { useAccounts } from "../../shared/hooks/use-accounts";
 import { useDashboardAuth } from "../../shared/hooks/use-dashboard-auth";
@@ -18,16 +18,16 @@ import { PageHeader } from "./components/PageHeader";
 import { ProxyPool } from "./components/ProxyPool";
 import { SettingsTab } from "./components/SettingsTab";
 import { UpdateModal } from "./components/UpdateModal";
+import { deriveGatewayState } from "./lib/gateway-state";
 import { migrateLegacyLayoutMode } from "./lib/layout-preferences";
 import { LEGACY_HASH_REDIRECTS, NAV_ITEMS, resolveAppRouteHash } from "./navigation";
 import { AccountManagement } from "./pages/AccountManagement";
+import { AboutPage } from "./pages/AboutPage";
+import { ActivityPage, type ActivityTab } from "./pages/ActivityPage";
 import { ApiAccessPage } from "./pages/ApiAccessPage";
 import { ClientKeysPage } from "./pages/ClientKeysPage";
-import { ErrorsPage } from "./pages/ErrorsPage";
 import { GatewayOverview } from "./pages/GatewayOverview";
-import { LogsPage } from "./pages/LogsPage";
 import { ProxySettings } from "./pages/ProxySettings";
-import { UsageStats } from "./pages/UsageStats";
 import { getShowUpdateDialogPreference, shouldAutoOpenUpdateModal } from "./update-modal-policy";
 
 export { shouldAutoOpenUpdateModal };
@@ -135,6 +135,13 @@ function Dashboard() {
         : "";
   const pageTitle = NAV_ITEMS.find((item) => item.hash === activeHash);
   const visibleErrorCount = errorCount.unread;
+  const gatewayReady = deriveGatewayState(accounts.list, accounts.selectedAccountId).kind === "ready"
+    && status.baseUrl !== "Loading...";
+  const activityTab: ActivityTab = routeHash === "#/errors"
+    ? "errors"
+    : routeHash === "#/usage-stats"
+      ? "usage"
+      : "requests";
 
   const toolbar = (
     <Header
@@ -161,7 +168,7 @@ function Dashboard() {
       onOpenSidebar={() => setMobileSidebarOpen(true)}
       onCloseSidebar={() => setMobileSidebarOpen(false)}
       toolbar={toolbar}
-      footer={<Footer updateStatus={update.status} />}
+      footer={<Footer updateStatus={update.status} gatewayReady={gatewayReady} />}
     >
       <div class="flex w-full flex-col">
         {pageTitle && routeHash !== "" && routeHash !== "#/accounts" && <PageHeader title={t(pageTitle.label)} />}
@@ -189,9 +196,9 @@ function Dashboard() {
             <ProxySettings embedded />
           </div>
         )}
-        {routeHash === "#/usage-stats" && <UsageStats embedded />}
-        {routeHash === "#/activity" && <LogsPage embedded />}
-        {routeHash === "#/errors" && <ErrorsPage />}
+        {(routeHash === "#/activity" || routeHash === "#/errors" || routeHash === "#/usage-stats") && (
+          <ActivityPage initialTab={activityTab} unreadErrors={visibleErrorCount} />
+        )}
         {routeHash === "#/api" && (
           <ApiAccessPage
             baseUrl={status.baseUrl}
@@ -207,16 +214,7 @@ function Dashboard() {
           />
         )}
         {routeHash === "#/settings" && <SettingsTab models={status.models} />}
-        {routeHash === "#/about" && (
-          <section class="max-w-2xl border-t border-nx-border pt-6 text-sm leading-6 text-muted">
-            <h2 class="text-base font-semibold text-ink">{APP_DISPLAY_NAME}</h2>
-            <p class="mt-1">{APP_DESCRIPTOR}</p>
-            <p class="mt-5">Independent modified distribution. {APP_BRAND} is not an official OpenAI or Codex product.</p>
-            <a class="mt-4 inline-flex text-accent hover:text-accent-strong" href={APP_REPOSITORY_URL} target="_blank" rel="noreferrer">
-              Source repository
-            </a>
-          </section>
-        )}
+        {routeHash === "#/about" && <AboutPage version={update.status?.proxy.version ?? null} commit={update.status?.proxy.commit ?? null} />}
       </div>
 
       {update.proxyUpdateInfo && (

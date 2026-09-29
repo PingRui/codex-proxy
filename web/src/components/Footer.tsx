@@ -1,24 +1,24 @@
-import { APP_BRAND, APP_DESCRIPTOR } from "../../../shared/brand";
+import { APP_BRAND } from "../../../shared/brand";
 import type { UpdateStatus } from "../../../shared/hooks/use-update-status";
+import { useT } from "../../../shared/i18n/context";
 
 interface FooterProps {
   updateStatus: UpdateStatus | null;
+  gatewayReady: boolean;
 }
 
-export function Footer({ updateStatus }: FooterProps) {
+export function Footer({ updateStatus, gatewayReady }: FooterProps) {
+  const t = useT();
   const proxyVersion = updateStatus?.proxy.version ?? "...";
-  const proxyCommit = updateStatus?.proxy.commit;
-  const codexVersion = updateStatus?.codex.current_version;
 
   return (
     <footer class="mt-auto shrink-0 border-t border-nx-border bg-surface px-4 py-3 sm:px-7 lg:px-9 xl:px-12">
-      <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-1 text-[11px] text-muted sm:flex-row sm:items-center sm:justify-between">
-        <span>{APP_BRAND} · {APP_DESCRIPTOR}</span>
-        <div class="flex flex-wrap items-center gap-x-2 font-mono">
-          <span>v{proxyVersion}{proxyCommit ? ` (${proxyCommit})` : ""}</span>
-          <span aria-hidden="true">/</span>
-          <span>Codex Desktop {codexVersion ? `v${codexVersion}` : "—"}</span>
-        </div>
+      <div class="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 text-[11px] text-muted">
+        <span>{APP_BRAND} v{proxyVersion}</span>
+        <span class="flex items-center gap-2">
+          <span class={`size-1.5 rounded-full ${gatewayReady ? "bg-success" : "bg-warning"}`} aria-hidden="true" />
+          {gatewayReady ? t("localGatewayReady") : t("localGatewayUnavailable")}
+        </span>
       </div>
     </footer>
   );
