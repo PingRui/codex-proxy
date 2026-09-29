@@ -53,12 +53,13 @@ curl http://127.0.0.1:8080/v1/images/generations \
 git clone https://github.com/PingRui/codex-proxy.git
 cd codex-proxy
 npm ci
+npm --prefix web ci
 npm run build
 npm --prefix packages/electron run build
 npm --prefix packages/electron run pack:win
 ```
 
-安裝檔位於 `packages/electron/release/`。Docker 請從原始碼執行 `docker compose up -d --build`；本文檔不假設新擁有者名下的 GHCR 映像已發佈。
+安裝檔位於 `packages/electron/release/`，檔名為 `NEXORA-<version>-win-x64.exe`（目前版本為 `NEXORA-2.1.8-win-x64.exe`）。Docker 請從原始碼執行 `docker compose up -d --build`；本文檔不假設新擁有者名下的 GHCR 映像已發佈。
 
 ## 安全及授權
 

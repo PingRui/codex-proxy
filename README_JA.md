@@ -53,12 +53,13 @@ curl http://127.0.0.1:8080/v1/images/generations \
 git clone https://github.com/PingRui/codex-proxy.git
 cd codex-proxy
 npm ci
+npm --prefix web ci
 npm run build
 npm --prefix packages/electron run build
 npm --prefix packages/electron run pack:win
 ```
 
-インストーラーは `packages/electron/release/` に出力されます。Docker ではソースから `docker compose up -d --build` を実行してください。新しい所有者名の GHCR イメージが公開済みとは想定していません。
+インストーラーは `packages/electron/release/` に `NEXORA-<version>-win-x64.exe` として出力されます（現在のバージョンは `NEXORA-2.1.8-win-x64.exe`）。Docker ではソースから `docker compose up -d --build` を実行してください。新しい所有者名の GHCR イメージが公開済みとは想定していません。
 
 ## セキュリティとライセンス
 

@@ -1,6 +1,6 @@
 {
   "name": "@codex-proxy/electron",
-  "version": "2.0.77",
+  "version": "2.1.8",
   "description": "NEXORA multi-account AI gateway",
   "private": true,
   "main": "dist-electron/main.cjs",

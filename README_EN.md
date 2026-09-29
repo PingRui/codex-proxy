@@ -68,6 +68,7 @@ Selecting a gateway account also asks NEXORA to write that account to Codex Desk
 git clone https://github.com/PingRui/codex-proxy.git
 cd codex-proxy
 npm ci
+npm --prefix web ci
 npm run build
 npm start
 ```
@@ -77,7 +78,7 @@ npm --prefix packages/electron run build
 npm --prefix packages/electron run pack:win
 ```
 
-Artifacts are written to `packages/electron/release/`. Without a production signing certificate, Windows SmartScreen may show an unknown-publisher warning.
+Artifacts are written to `packages/electron/release/` as `NEXORA-<version>-win-x64.exe` (currently `NEXORA-2.1.8-win-x64.exe`). Without a production signing certificate, Windows SmartScreen may show an unknown-publisher warning.
 
 ## Docker (build from source)
 

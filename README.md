@@ -70,6 +70,7 @@ curl http://127.0.0.1:8080/v1/images/generations \
 git clone https://github.com/PingRui/codex-proxy.git
 cd codex-proxy
 npm ci
+npm --prefix web ci
 npm run build
 npm start
 ```
@@ -79,7 +80,7 @@ npm --prefix packages/electron run build
 npm --prefix packages/electron run pack:win
 ```
 
-安装包输出到 `packages/electron/release/`。未配置代码签名证书时，Windows SmartScreen 可能显示未知发布者提示。
+安装包输出到 `packages/electron/release/`，文件名为 `NEXORA-<version>-win-x64.exe`（当前版本为 `NEXORA-2.1.8-win-x64.exe`）。未配置代码签名证书时，Windows SmartScreen 可能显示未知发布者提示。
 
 ## Docker（从源码构建）
 
