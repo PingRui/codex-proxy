@@ -21,10 +21,10 @@ import { UpdateModal } from "./components/UpdateModal";
 import { migrateLegacyLayoutMode } from "./lib/layout-preferences";
 import { LEGACY_HASH_REDIRECTS, NAV_ITEMS, resolveAppRouteHash } from "./navigation";
 import { AccountManagement } from "./pages/AccountManagement";
+import { ApiAccessPage } from "./pages/ApiAccessPage";
 import { ClientKeysPage } from "./pages/ClientKeysPage";
 import { ErrorsPage } from "./pages/ErrorsPage";
 import { GatewayOverview } from "./pages/GatewayOverview";
-import { InfoPage } from "./pages/InfoPage";
 import { LogsPage } from "./pages/LogsPage";
 import { ProxySettings } from "./pages/ProxySettings";
 import { UsageStats } from "./pages/UsageStats";
@@ -193,7 +193,7 @@ function Dashboard() {
         {routeHash === "#/activity" && <LogsPage embedded />}
         {routeHash === "#/errors" && <ErrorsPage />}
         {routeHash === "#/api" && (
-          <InfoPage
+          <ApiAccessPage
             baseUrl={status.baseUrl}
             apiKey={status.apiKey}
             models={status.models}
