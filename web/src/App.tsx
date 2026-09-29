@@ -1,41 +1,44 @@
-import { useState, useEffect, useRef, useContext } from "preact/hooks";
-import { createContext } from "preact";
-import type { ComponentChildren } from "preact";
-import { I18nProvider } from "../../shared/i18n/context";
-import { ThemeProvider } from "../../shared/theme/context";
-import { Header } from "./components/Header";
-import { UpdateModal } from "./components/UpdateModal";
-import { AddAccount } from "./components/AddAccount";
-import { AccountList } from "./components/AccountList";
-import { PoolOverview } from "./components/PoolOverview";
-import { SettingsTab } from "./components/SettingsTab";
-import { ProxyPool } from "./components/ProxyPool";
-import { Footer } from "./components/Footer";
-import { Sidebar } from "./components/Sidebar";
-import { ApiKeyManager } from "./components/ApiKeyManager";
-import { ProxySettings } from "./pages/ProxySettings";
-import { AccountManagement } from "./pages/AccountManagement";
-import { UsageStats } from "./pages/UsageStats";
-import { LogsPage } from "./pages/LogsPage";
-import { ErrorsPage } from "./pages/ErrorsPage";
-import { ClientKeysPage } from "./pages/ClientKeysPage";
-import { InfoPage } from "./pages/InfoPage";
+import { createContext, type ComponentChildren } from "preact";
+import { useContext, useEffect, useRef, useState } from "preact/hooks";
+import { APP_BRAND, APP_DESCRIPTOR, APP_DISPLAY_NAME, APP_REPOSITORY_URL } from "../../shared/brand";
+import { I18nProvider, useI18n } from "../../shared/i18n/context";
 import { useAccounts } from "../../shared/hooks/use-accounts";
+import { useDashboardAuth } from "../../shared/hooks/use-dashboard-auth";
 import { useErrorLogsCount } from "../../shared/hooks/use-error-logs";
+import { useGeneralSettings } from "../../shared/hooks/use-general-settings";
 import { useProxies } from "../../shared/hooks/use-proxies";
 import { useStatus } from "../../shared/hooks/use-status";
 import { useUpdateStatus } from "../../shared/hooks/use-update-status";
-import { useI18n, useT } from "../../shared/i18n/context";
-import { useDashboardAuth } from "../../shared/hooks/use-dashboard-auth";
-import { useGeneralSettings } from "../../shared/hooks/use-general-settings";
+import { ThemeProvider } from "../../shared/theme/context";
+import { AccountList } from "./components/AccountList";
+import { AddAccount } from "./components/AddAccount";
+import { ApiKeyManager } from "./components/ApiKeyManager";
+import { AppShell } from "./components/AppShell";
+import { Footer } from "./components/Footer";
+import { Header } from "./components/Header";
+import { PageHeader } from "./components/PageHeader";
+import { PoolOverview } from "./components/PoolOverview";
+import { ProxyPool } from "./components/ProxyPool";
+import { SettingsTab } from "./components/SettingsTab";
+import { UpdateModal } from "./components/UpdateModal";
+import { migrateLegacyLayoutMode } from "./lib/layout-preferences";
+import { LEGACY_HASH_REDIRECTS, NAV_ITEMS } from "./navigation";
+import { AccountManagement } from "./pages/AccountManagement";
+import { ClientKeysPage } from "./pages/ClientKeysPage";
+import { ErrorsPage } from "./pages/ErrorsPage";
+import { InfoPage } from "./pages/InfoPage";
+import { LogsPage } from "./pages/LogsPage";
+import { ProxySettings } from "./pages/ProxySettings";
+import { UsageStats } from "./pages/UsageStats";
 import { getShowUpdateDialogPreference, shouldAutoOpenUpdateModal } from "./update-modal-policy";
-import { getLayoutMode, saveLayoutMode, type LayoutMode } from "./lib/layout-preferences";
-import { NAV_ITEMS } from "./navigation";
 
 export { shouldAutoOpenUpdateModal };
 
 const DashboardAuthCtx = createContext<{ onLogout?: () => void }>({});
-function useDashboardAuthCtx() { return useContext(DashboardAuthCtx); }
+
+function useDashboardAuthCtx() {
+  return useContext(DashboardAuthCtx);
+}
 
 function useUpdateMessage() {
   const { t } = useI18n();
@@ -46,55 +49,45 @@ function useUpdateMessage() {
 
   if (!update.checking && update.result) {
     const parts: string[] = [];
-    const r = update.result;
-    if (r.proxy?.error) { parts.push(`Proxy: ${r.proxy.error}`); color = "text-red-500"; }
-    else if (r.proxy?.update_available) { parts.push(t("updateAvailable")); color = "text-amber-500"; }
-    if (r.codex?.error) { parts.push(`Codex: ${r.codex.error}`); color = "text-red-500"; }
-    else if (r.codex_update_in_progress) { parts.push(t("fingerprintUpdating")); }
-    else if (r.codex?.version_changed) { parts.push(`Codex: v${r.codex.current_version}`); color = "text-blue-500"; }
+    const result = update.result;
+    if (result.proxy?.error) {
+      parts.push(`Proxy: ${result.proxy.error}`);
+      color = "text-red-500";
+    } else if (result.proxy?.update_available) {
+      parts.push(t("updateAvailable"));
+      color = "text-amber-500";
+    }
+    if (result.codex?.error) {
+      parts.push(`Codex: ${result.codex.error}`);
+      color = "text-red-500";
+    } else if (result.codex_update_in_progress) {
+      parts.push(t("fingerprintUpdating"));
+    } else if (result.codex?.version_changed) {
+      parts.push(`Codex: v${result.codex.current_version}`);
+      color = "text-blue-500";
+    }
     msg = parts.length > 0 ? parts.join(" · ") : t("upToDate");
-  } else if (!update.checking && update.error) { msg = update.error; color = "text-red-500"; }
+  } else if (!update.checking && update.error) {
+    msg = update.error;
+    color = "text-red-500";
+  }
 
   const hasUpdate = update.status?.proxy.update_available ?? false;
   const showUpdateDialog = getShowUpdateDialogPreference(update.status);
   const proxyUpdateInfo = hasUpdate
-    ? { mode: update.status!.proxy.mode, commits: update.status!.proxy.commits, changelog: update.status!.proxy.changelog ?? null, release: update.status!.proxy.release }
+    ? {
+        mode: update.status!.proxy.mode,
+        commits: update.status!.proxy.commits,
+        changelog: update.status!.proxy.changelog ?? null,
+        release: update.status!.proxy.release,
+      }
     : null;
 
   return { ...update, msg, color, hasUpdate, showUpdateDialog, proxyUpdateInfo };
 }
 
-// ── Tab definitions ─────────────────────────────────────────────────
-
-const TABS = NAV_ITEMS;
-
-export function TabBar({ activeHash }: { activeHash: string }) {
-  const t = useT();
-  return (
-    <div class="flex flex-wrap items-center gap-1.5 mb-4 max-w-full">
-      {TABS.map((tab) => {
-        const isActive = activeHash === tab.hash;
-        return (
-          <a
-            key={tab.hash}
-            href={tab.hash || "#/"}
-            class={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              isActive
-                ? "bg-primary-container text-primary"
-                : "text-slate-500 dark:text-text-dim hover:bg-slate-100 dark:hover:bg-border-dark"
-            }`}
-          >
-            {t(tab.label)}
-          </a>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Dashboard ───────────────────────────────────────────────────────
-
 function Dashboard() {
+  const { t } = useI18n();
   const accounts = useAccounts();
   const proxies = useProxies();
   const status = useStatus(accounts.list.length);
@@ -102,16 +95,14 @@ function Dashboard() {
   const update = useUpdateMessage();
   const { onLogout } = useDashboardAuthCtx();
   const [showModal, setShowModal] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const prevUpdateAvailable = useRef(false);
   const hash = useHash();
   const errorCount = useErrorLogsCount();
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => getLayoutMode());
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const handleLayoutModeChange = (mode: LayoutMode) => {
-    setLayoutMode(mode);
-    saveLayoutMode(mode);
-  };
+  useEffect(() => {
+    migrateLegacyLayoutMode();
+  }, []);
 
   useEffect(() => {
     if (shouldAutoOpenUpdateModal({
@@ -125,148 +116,142 @@ function Dashboard() {
     prevUpdateAvailable.current = update.hasUpdate;
   }, [update.hasUpdate, update.proxyUpdateInfo?.mode, update.showUpdateDialog]);
 
+  const normalizedHash = hash === "#/" ? "" : hash;
+  const routeHash = LEGACY_HASH_REDIRECTS[normalizedHash] ?? normalizedHash;
+
+  useEffect(() => {
+    const redirect = LEGACY_HASH_REDIRECTS[normalizedHash];
+    if (redirect && location.hash !== redirect) location.hash = redirect;
+  }, [normalizedHash]);
+
+  const activeHash = NAV_ITEMS.some((item) => item.hash === routeHash)
+    ? routeHash
+    : routeHash === "#/errors" || routeHash === "#/usage-stats"
+      ? "#/activity"
+      : routeHash === "#/client-keys" || routeHash === "#/api-keys" || routeHash === "#/proxies"
+        ? "#/settings"
+        : "";
+  const pageTitle = NAV_ITEMS.find((item) => item.hash === activeHash);
+  const visibleErrorCount = errorCount.unread;
+
   const handleProxyChange = async (accountId: string, proxyId: string) => {
     accounts.patchLocal(accountId, { proxyId });
     await proxies.assignProxy(accountId, proxyId);
   };
 
-  // Redirect legacy routes
-  if (hash === "#/account-management") { location.hash = "#/accounts"; return null; }
-  if (hash === "#/proxy-settings") { location.hash = "#/proxies"; return null; }
-
-  const activeTab = TABS.find((t) => t.hash === hash)?.hash ?? "";
-
-  const isSidebarLayout = layoutMode === "sidebar";
-  const visibleErrorCount = errorCount.unread;
+  const toolbar = (
+    <Header
+      onAddAccount={accounts.startAdd}
+      onCheckUpdate={update.checkForUpdate}
+      onOpenUpdateModal={() => setShowModal(true)}
+      checking={update.checking}
+      updateStatusMsg={update.msg}
+      updateStatusColor={update.color}
+      version={update.status?.proxy.version ?? null}
+      commit={update.status?.proxy.commit ?? null}
+      hasUpdate={update.hasUpdate}
+      onLogout={onLogout}
+      unreadErrors={visibleErrorCount}
+    />
+  );
 
   return (
-    <div class="min-h-screen flex bg-slate-50 dark:bg-bg-dark">
-      {isSidebarLayout && <Sidebar activeHash={activeTab} unreadErrors={visibleErrorCount} uptimeSeconds={status.uptimeSeconds} mobileOpen={mobileSidebarOpen} onMobileClose={() => setMobileSidebarOpen(false)} />}
-      <div class={`min-h-screen min-w-0 flex flex-1 flex-col ${isSidebarLayout ? "lg:pl-60" : ""}`}>
-      <Header
-        onAddAccount={accounts.startAdd}
-        onCheckUpdate={update.checkForUpdate}
-        onOpenUpdateModal={() => setShowModal(true)}
-        checking={update.checking}
-        updateStatusMsg={update.msg}
-        updateStatusColor={update.color}
-        version={update.status?.proxy.version ?? null}
-        commit={update.status?.proxy.commit ?? null}
-        hasUpdate={update.hasUpdate}
-        onLogout={onLogout}
-        unreadErrors={visibleErrorCount}
-        showBrand={!isSidebarLayout}
-        onOpenSidebar={isSidebarLayout ? () => setMobileSidebarOpen(true) : undefined}
-      />
+    <AppShell
+      activeHash={activeHash}
+      unreadErrors={visibleErrorCount}
+      uptimeSeconds={status.uptimeSeconds}
+      mobileSidebarOpen={mobileSidebarOpen}
+      onOpenSidebar={() => setMobileSidebarOpen(true)}
+      onCloseSidebar={() => setMobileSidebarOpen(false)}
+      toolbar={toolbar}
+      footer={<Footer updateStatus={update.status} />}
+    >
+      <div class="flex w-full flex-col">
+        {pageTitle && <PageHeader title={t(pageTitle.label)} />}
 
-      <main class={`flex-1 px-4 py-6 md:px-8 md:py-8 ${isSidebarLayout ? "lg:px-8 xl:px-10" : "lg:px-40"} flex justify-center`}>
-        <div class={`flex w-full flex-col ${isSidebarLayout ? "max-w-[1320px]" : "max-w-[960px]"}`}>
-          <AddAccount
-            visible={accounts.addVisible}
-            onCancel={accounts.cancelAdd}
-            onSubmitRelay={accounts.submitRelay}
-            onAddByRefreshToken={accounts.addByRefreshToken}
-            addInfo={accounts.addInfo}
-            addError={accounts.addError}
-            authUrl={accounts.addAuthUrl}
-            fallbackConfigured={!!accounts.fallbackUpstream}
-            onAddFallbackUpstream={accounts.addFallbackUpstream}
+        <AddAccount
+          visible={accounts.addVisible}
+          onCancel={accounts.cancelAdd}
+          onSubmitRelay={accounts.submitRelay}
+          onAddByRefreshToken={accounts.addByRefreshToken}
+          addInfo={accounts.addInfo}
+          addError={accounts.addError}
+          authUrl={accounts.addAuthUrl}
+          fallbackConfigured={!!accounts.fallbackUpstream}
+          onAddFallbackUpstream={accounts.addFallbackUpstream}
+        />
+
+        {routeHash === "" && (
+          <div class="flex flex-col gap-6">
+            <PoolOverview accounts={accounts.list} creditsPerUsd={generalSettings.data?.credits_per_usd} />
+            <AccountList
+              accounts={accounts.list}
+              loading={accounts.loading}
+              onDelete={accounts.deleteAccount}
+              onRefresh={accounts.refresh}
+              refreshing={accounts.refreshing}
+              lastUpdated={accounts.lastUpdated}
+              proxies={proxies.proxies}
+              onProxyChange={handleProxyChange}
+              onExport={accounts.exportAccounts}
+              onImport={accounts.importAccounts}
+              onToggleStatus={accounts.toggleStatus}
+              onUpdateLabel={accounts.updateLabel}
+              onUpdateCodexFingerprintMode={accounts.updateCodexFingerprintMode}
+              fallbackUpstream={accounts.fallbackUpstream}
+              fallbackActive={accounts.fallbackActive}
+              onUpdateFallbackUpstream={accounts.updateFallbackUpstream}
+              onDeleteFallbackUpstream={accounts.deleteFallbackUpstream}
+              selectedAccountId={accounts.selectedAccountId}
+              manualMode={accounts.manualMode}
+              selectingAccountId={accounts.selectingAccountId}
+              selectionNotice={accounts.selectionNotice}
+              onSelectAccount={accounts.selectAccount}
+              onDismissSelectionNotice={accounts.dismissSelectionNotice}
+            />
+            <ProxyPool proxies={proxies} />
+          </div>
+        )}
+
+        {routeHash === "#/accounts" && <AccountManagement embedded />}
+        {routeHash === "#/client-keys" && <ClientKeysPage masterApiKey={status.apiKey} />}
+        {routeHash === "#/api-keys" && <ApiKeyManager />}
+        {routeHash === "#/proxies" && (
+          <div class="flex flex-col gap-6">
+            <ProxyPool proxies={proxies} />
+            <ProxySettings embedded />
+          </div>
+        )}
+        {routeHash === "#/usage-stats" && <UsageStats embedded />}
+        {routeHash === "#/activity" && <LogsPage embedded />}
+        {routeHash === "#/errors" && <ErrorsPage />}
+        {routeHash === "#/api" && (
+          <InfoPage
+            baseUrl={status.baseUrl}
+            apiKey={status.apiKey}
+            models={status.models}
+            selectedModel={status.selectedModel}
+            onModelChange={status.setSelectedModel}
+            modelFamilies={status.modelFamilies}
+            selectedEffort={status.selectedEffort}
+            onEffortChange={status.setSelectedEffort}
+            selectedSpeed={status.selectedSpeed}
+            onSpeedChange={status.setSelectedSpeed}
           />
+        )}
+        {routeHash === "#/settings" && <SettingsTab models={status.models} />}
+        {routeHash === "#/about" && (
+          <section class="max-w-2xl border-t border-nx-border pt-6 text-sm leading-6 text-muted">
+            <h2 class="text-base font-semibold text-ink">{APP_DISPLAY_NAME}</h2>
+            <p class="mt-1">{APP_DESCRIPTOR}</p>
+            <p class="mt-5">Independent modified distribution. {APP_BRAND} is not an official OpenAI or Codex product.</p>
+            <a class="mt-4 inline-flex text-accent hover:text-accent-strong" href={APP_REPOSITORY_URL} target="_blank" rel="noreferrer">
+              Source repository
+            </a>
+          </section>
+        )}
+      </div>
 
-          {!isSidebarLayout && <TabBar activeHash={activeTab} />}
-
-          {activeTab === "" && (
-            <div class="flex flex-col gap-6">
-              <PoolOverview
-                accounts={accounts.list}
-                creditsPerUsd={generalSettings.data?.credits_per_usd}
-              />
-              <AccountList
-                accounts={accounts.list}
-                loading={accounts.loading}
-                onDelete={accounts.deleteAccount}
-                onRefresh={accounts.refresh}
-                refreshing={accounts.refreshing}
-                lastUpdated={accounts.lastUpdated}
-                proxies={proxies.proxies}
-                onProxyChange={handleProxyChange}
-                onExport={accounts.exportAccounts}
-                onImport={accounts.importAccounts}
-                onToggleStatus={accounts.toggleStatus}
-                onUpdateLabel={accounts.updateLabel}
-                onUpdateCodexFingerprintMode={accounts.updateCodexFingerprintMode}
-                fallbackUpstream={accounts.fallbackUpstream}
-                fallbackActive={accounts.fallbackActive}
-                onUpdateFallbackUpstream={accounts.updateFallbackUpstream}
-                onDeleteFallbackUpstream={accounts.deleteFallbackUpstream}
-                selectedAccountId={accounts.selectedAccountId}
-                manualMode={accounts.manualMode}
-                selectingAccountId={accounts.selectingAccountId}
-                selectionNotice={accounts.selectionNotice}
-                onSelectAccount={accounts.selectAccount}
-                onDismissSelectionNotice={accounts.dismissSelectionNotice}
-              />
-              <ProxyPool proxies={proxies} />
-            </div>
-          )}
-
-          {activeTab === "#/accounts" && (
-            <AccountManagement embedded />
-          )}
-
-          {activeTab === "#/client-keys" && (
-            <ClientKeysPage masterApiKey={status.apiKey} />
-          )}
-
-          {activeTab === "#/api-keys" && (
-            <ApiKeyManager />
-          )}
-
-          {activeTab === "#/proxies" && (
-            <div class="flex flex-col gap-6">
-              <ProxyPool proxies={proxies} />
-              <ProxySettings embedded />
-            </div>
-          )}
-
-          {activeTab === "#/usage-stats" && (
-            <UsageStats embedded />
-          )}
-
-          {activeTab === "#/logs" && (
-            <LogsPage embedded />
-          )}
-
-          {activeTab === "#/errors" && (
-            <ErrorsPage />
-          )}
-
-          {activeTab === "#/info" && (
-            <InfoPage
-              baseUrl={status.baseUrl}
-              apiKey={status.apiKey}
-              models={status.models}
-              selectedModel={status.selectedModel}
-              onModelChange={status.setSelectedModel}
-              modelFamilies={status.modelFamilies}
-              selectedEffort={status.selectedEffort}
-              onEffortChange={status.setSelectedEffort}
-              selectedSpeed={status.selectedSpeed}
-              onSpeedChange={status.setSelectedSpeed}
-            />
-          )}
-
-          {activeTab === "#/settings" && (
-            <SettingsTab
-              models={status.models}
-              layoutMode={layoutMode}
-              onLayoutModeChange={handleLayoutModeChange}
-            />
-          )}
-        </div>
-      </main>
-
-      <Footer updateStatus={update.status} />
       {update.proxyUpdateInfo && (
         <UpdateModal
           open={showModal}
@@ -282,12 +267,9 @@ function Dashboard() {
           updateSteps={update.updateSteps}
         />
       )}
-      </div>
-    </div>
+    </AppShell>
   );
 }
-
-// ── Utilities ────────────────────────────────────────────────────────
 
 function useHash(): string {
   const [hash, setHash] = useState(location.hash);
@@ -306,39 +288,41 @@ function LoginGate({ children }: { children: ComponentChildren }) {
 
   if (auth.status === "loading") {
     return (
-      <div class="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-bg-dark">
-        <div class="animate-pulse text-slate-400 dark:text-text-dim text-sm">Loading...</div>
+      <div class="flex min-h-screen items-center justify-center bg-canvas text-sm text-muted">
+        {t("loadingAccounts")}
       </div>
     );
   }
 
   if (auth.status === "login") {
-    const handleSubmit = (e: Event) => { e.preventDefault(); if (password.trim()) auth.login(password.trim()); };
+    const handleSubmit = (event: Event) => {
+      event.preventDefault();
+      if (password.trim()) auth.login(password.trim());
+    };
     return (
-      <div class="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-bg-dark px-4">
-        <div class="w-full max-w-sm bg-white dark:bg-card-dark border border-gray-200 dark:border-border-dark rounded-2xl shadow-lg p-8">
-          <div class="flex flex-col items-center gap-2 mb-6">
-            <div class="flex items-center justify-center size-12 rounded-full bg-primary-container text-primary border border-primary/20">
-              <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-            </div>
-            <h1 class="text-lg font-bold text-slate-800 dark:text-text-main">{t("dashboardLogin")}</h1>
-            <p class="text-xs text-slate-500 dark:text-text-dim text-center">{t("dashboardLoginRequired")}</p>
-          </div>
-          <form onSubmit={handleSubmit} class="flex flex-col gap-4">
+      <div class="flex min-h-screen items-center justify-center bg-canvas px-4">
+        <div class="w-full max-w-sm border border-nx-border bg-surface p-8">
+          <p class="text-xs font-medium text-muted">{APP_DESCRIPTOR}</p>
+          <h1 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-ink">{APP_BRAND}</h1>
+          <p class="mt-3 text-sm text-muted">{t("dashboardLoginRequired")}</p>
+          <form onSubmit={handleSubmit} class="mt-6 flex flex-col gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-600 dark:text-text-dim mb-1.5">{t("dashboardPassword")}</label>
-              <input type="password" value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-border-dark bg-slate-50 dark:bg-bg-dark text-sm text-slate-800 dark:text-text-main focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
-                placeholder="proxy_api_key" autofocus />
+              <label class="mb-1.5 block text-xs font-medium text-muted">{t("dashboardPassword")}</label>
+              <input
+                type="password"
+                value={password}
+                onInput={(event) => setPassword((event.target as HTMLInputElement).value)}
+                class="w-full rounded-lg border border-nx-border bg-canvas px-3 py-2 text-sm text-ink focus:border-accent"
+                placeholder="proxy_api_key"
+                autofocus
+              />
             </div>
             {auth.error && (
-              <p class="text-xs text-red-500 font-medium">
+              <p class="text-xs font-medium text-danger">
                 {auth.error.includes("Too many") ? t("dashboardTooManyAttempts") : t("dashboardLoginError")}
               </p>
             )}
-            <button type="submit" class="w-full py-2.5 bg-primary-action hover:bg-primary-action-hover text-white text-sm font-semibold rounded-lg transition-colors shadow-sm active:scale-[0.98]">
+            <button type="submit" class="w-full rounded-lg bg-accent-strong py-2.5 text-sm font-semibold text-white hover:bg-accent">
               {t("dashboardLoginBtn")}
             </button>
           </form>

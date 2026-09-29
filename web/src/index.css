@@ -3,11 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --primary: 4 120 87;
-  --primary-hover: 6 95 70;
-  --primary-action: 4 120 87;
-  --primary-action-hover: 6 95 70;
-  --primary-container: 236 253 245;
+  --nx-canvas: 246 247 249;
+  --nx-sidebar: 238 240 244;
+  --nx-surface: 255 255 255;
+  --nx-surface-raised: 255 255 255;
+  --nx-border: 218 222 230;
+  --nx-ink: 28 31 38;
+  --nx-muted: 101 108 122;
+  --nx-accent: 59 130 246;
+  --nx-accent-strong: 37 99 235;
+  --primary: var(--nx-accent);
+  --primary-hover: var(--nx-accent-strong);
+  --primary-action: var(--nx-accent-strong);
+  --primary-action-hover: 29 78 216;
+  --primary-container: 232 240 254;
   --success: 4 120 87;
   --success-container: 236 253 245;
   --warning: 146 64 14;
@@ -34,11 +43,20 @@
 }
 
 .dark {
-  --primary: 52 211 153;
-  --primary-hover: 16 185 129;
-  --primary-action: 4 120 87;
-  --primary-action-hover: 6 95 70;
-  --primary-container: 6 78 59;
+  --nx-canvas: 13 15 19;
+  --nx-sidebar: 18 20 25;
+  --nx-surface: 23 26 32;
+  --nx-surface-raised: 29 32 39;
+  --nx-border: 48 52 61;
+  --nx-ink: 236 238 242;
+  --nx-muted: 151 157 169;
+  --nx-accent: 96 165 250;
+  --nx-accent-strong: 59 130 246;
+  --primary: var(--nx-accent);
+  --primary-hover: 147 197 253;
+  --primary-action: var(--nx-accent-strong);
+  --primary-action-hover: 37 99 235;
+  --primary-container: 26 42 63;
   --success: 52 211 153;
   --success-container: 6 78 59;
   --warning: 251 191 36;
@@ -73,8 +91,42 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: rgb(var(--nx-canvas));
+  color: rgb(var(--nx-ink));
+  font-family: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color-scheme: light dark;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+summary {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--nx-canvas)), 0 0 0 4px rgb(var(--nx-accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 code, kbd, samp, pre {

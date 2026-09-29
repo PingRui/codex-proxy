@@ -6,6 +6,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        canvas: "rgb(var(--nx-canvas) / <alpha-value>)",
+        sidebar: "rgb(var(--nx-sidebar) / <alpha-value>)",
+        surface: "rgb(var(--nx-surface) / <alpha-value>)",
+        "surface-raised": "rgb(var(--nx-surface-raised) / <alpha-value>)",
+        "nx-border": "rgb(var(--nx-border) / <alpha-value>)",
+        ink: "rgb(var(--nx-ink) / <alpha-value>)",
+        muted: "rgb(var(--nx-muted) / <alpha-value>)",
+        accent: "rgb(var(--nx-accent) / <alpha-value>)",
+        "accent-strong": "rgb(var(--nx-accent-strong) / <alpha-value>)",
         primary: "rgb(var(--primary) / <alpha-value>)",
         "primary-hover": "rgb(var(--primary-hover) / <alpha-value>)",
         "primary-action": "rgb(var(--primary-action) / <alpha-value>)",

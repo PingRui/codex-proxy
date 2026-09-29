@@ -1,16 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from "preact/hooks";
+import { useState, useCallback } from "preact/hooks";
 import { useT } from "../../../shared/i18n/context";
 import { useGeneralSettings, type SystemPromptStrategy } from "../../../shared/hooks/use-general-settings";
 import { useSettings } from "../../../shared/hooks/use-settings";
-import { getLayoutMode, saveLayoutMode, type LayoutMode } from "../lib/layout-preferences";
 import { SettingItemControl } from "./settings/SettingItemControl";
 
-interface GeneralSettingsProps {
-  layoutMode?: LayoutMode;
-  onLayoutModeChange?: (mode: LayoutMode) => void;
-}
-
-export function GeneralSettings({ layoutMode, onLayoutModeChange }: GeneralSettingsProps = {}) {
+export function GeneralSettings() {
   const t = useT();
   const settings = useSettings();
   const gs = useGeneralSettings(settings.apiKey);
@@ -35,7 +29,6 @@ export function GeneralSettings({ layoutMode, onLayoutModeChange }: GeneralSetti
   const [draftAutoDownload, setDraftAutoDownload] = useState<boolean | null>(null);
   const [draftShowUpdateDialog, setDraftShowUpdateDialog] = useState<boolean | null>(null);
   const [draftAllowPrerelease, setDraftAllowPrerelease] = useState<boolean | null>(null);
-  const [localLayoutMode, setLocalLayoutMode] = useState<LayoutMode>(() => getLayoutMode());
   const [collapsed, setCollapsed] = useState(true);
 
   // Field-level saving / saved states. savingFields is keyed by field name so
@@ -43,13 +36,6 @@ export function GeneralSettings({ layoutMode, onLayoutModeChange }: GeneralSetti
   const [savingFields, setSavingFields] = useState<Record<string, boolean>>({});
   const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
-
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
 
   const currentPort = gs.data?.port ?? 8080;
   const currentProxyUrl = gs.data?.proxy_url ?? "";
@@ -94,21 +80,6 @@ export function GeneralSettings({ layoutMode, onLayoutModeChange }: GeneralSetti
   const displayAutoDownload = draftAutoDownload ?? currentAutoDownload;
   const displayShowUpdateDialog = draftShowUpdateDialog ?? currentShowUpdateDialog;
   const displayAllowPrerelease = draftAllowPrerelease ?? currentAllowPrerelease;
-  const displayLayoutMode = layoutMode ?? localLayoutMode;
-
-  const handleLayoutModeChange = (mode: LayoutMode) => {
-    setLocalLayoutMode(mode);
-    saveLayoutMode(mode);
-    onLayoutModeChange?.(mode);
-    setSavedFields((prev) => ({ ...prev, layoutMode: true }));
-    setTimeout(() => {
-      // Reset after the badge fades so the next change re-triggers it.
-      if (mountedRef.current) {
-        setSavedFields((prev) => ({ ...prev, layoutMode: false }));
-      }
-    }, 2000);
-  };
-
   const saveSingleField = useCallback(async (fieldName: string, patch: Record<string, unknown>, resetDraft: () => void) => {
     setSavingFields((prev) => ({ ...prev, [fieldName]: true }));
     setFieldErrors((prev) => ({ ...prev, [fieldName]: null }));
@@ -718,23 +689,6 @@ export function GeneralSettings({ layoutMode, onLayoutModeChange }: GeneralSetti
 
         {!collapsed && (
           <div class="px-5 py-2">
-            {/* Dashboard Layout */}
-            <SettingItemControl
-              label={t("generalSettingsLayout")}
-              hint={t("generalSettingsLayoutHint")}
-              saved={savedFields.layoutMode}
-            >
-              <select
-                id="dashboard-layout"
-                class={`${inputCls} max-w-[280px]`}
-                value={displayLayoutMode}
-                onChange={(e) => handleLayoutModeChange((e.target as HTMLSelectElement).value as LayoutMode)}
-              >
-                <option value="sidebar">{t("generalSettingsLayoutSidebar")}</option>
-                <option value="top">{t("generalSettingsLayoutTop")}</option>
-              </select>
-            </SettingItemControl>
-
             {/* Auto Update */}
             <SettingItemControl
               label={t("generalSettingsAutoUpdate")}

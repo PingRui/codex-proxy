@@ -1,42 +1,42 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, beforeAll, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/preact";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, cleanup, screen, within } from "@testing-library/preact";
 import { I18nProvider } from "../../shared/i18n/context";
-
-let TabBarComponent: typeof import("./App").TabBar;
-
-beforeAll(async () => {
-  Object.defineProperty(window, "matchMedia", {
-    writable: true,
-    value: (query: string): MediaQueryList => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      dispatchEvent: () => false,
-    }),
-  });
-
-  const app = await import("./App");
-  TabBarComponent = app.TabBar;
-});
+import { Sidebar } from "./components/Sidebar";
+import { LEGACY_HASH_REDIRECTS } from "./navigation";
 
 afterEach(() => {
   cleanup();
 });
 
-describe("TabBar", () => {
-  it("wraps dashboard tabs instead of forcing horizontal overflow on mobile", () => {
-    const { container } = render(
+describe("NEXORA workspace shell", () => {
+  it("shows only the six normal-workflow destinations without promotion", () => {
+    render(
       <I18nProvider>
-        <TabBarComponent activeHash="#/accounts" />
+        <Sidebar activeHash="" />
       </I18nProvider>,
     );
 
-    const tabBar = container.firstElementChild;
-    expect(tabBar?.className).toContain("flex-wrap");
+    expect(screen.getAllByText("NEXORA").length).toBeGreaterThan(0);
+    const navigation = screen.getAllByRole("navigation", { name: "Primary navigation" })[0];
+    const links = within(navigation).getAllByRole("link");
+
+    expect(links.map((link) => link.textContent?.trim())).toEqual([
+      "Overview",
+      "Accounts",
+      "API Access",
+      "Activity",
+      "Settings",
+      "About",
+    ]);
+    expect(screen.queryByText(/Star on GitHub/i)).toBeNull();
+  });
+
+  it("keeps legacy links pointed at the simplified destinations", () => {
+    expect(LEGACY_HASH_REDIRECTS).toMatchObject({
+      "#/info": "#/api",
+      "#/logs": "#/activity",
+      "#/account-management": "#/accounts",
+    });
   });
 });

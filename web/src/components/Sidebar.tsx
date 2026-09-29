@@ -1,4 +1,5 @@
 import { useEffect } from "preact/hooks";
+import { APP_BRAND, APP_DESCRIPTOR } from "../../../shared/brand";
 import { useI18n, useT } from "../../../shared/i18n/context";
 import { NAV_ITEMS, type IconName } from "../navigation";
 
@@ -25,7 +26,7 @@ function NavIcon({ name }: { name: IconName }) {
 
 function BrandMark() {
   return (
-    <img src="/icon.png" alt="Codex Proxy" class="size-9 shrink-0 object-contain" />
+    <img src="/icon.png" alt={APP_BRAND} class="size-8 shrink-0 object-contain" />
   );
 }
 
@@ -39,7 +40,7 @@ function formatUptime(seconds: number | null): string {
   return `${minutes}m`;
 }
 
-function NavigationLinks({ activeHash, unreadErrors = 0, onNavigate }: { activeHash: string; unreadErrors?: number; onNavigate?: () => void }) {
+function NavigationLinks({ activeHash, onNavigate }: { activeHash: string; onNavigate?: () => void }) {
   const t = useT();
   return (
     <>
@@ -50,17 +51,15 @@ function NavigationLinks({ activeHash, unreadErrors = 0, onNavigate }: { activeH
             key={item.hash}
             href={item.hash || "#/"}
             onClick={onNavigate}
-            class={`w-full px-4 flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition-colors ${
+            class={`relative flex w-full items-center gap-3 rounded-md border px-3 py-2 text-[13px] font-medium transition-colors ${
               isActive
-                ? "bg-primary/15 text-primary shadow-sm"
-                : "text-slate-500 dark:text-text-dim hover:bg-slate-100 dark:hover:bg-border-dark/60 hover:text-slate-800 dark:hover:text-text-main"
+                ? "border-nx-border bg-surface text-ink"
+                : "border-transparent text-muted hover:bg-surface/70 hover:text-ink"
             }`}
           >
+            {isActive && <span class="absolute -left-[1px] top-2 bottom-2 w-0.5 rounded-full bg-accent" />}
             <NavIcon name={item.icon} />
             <span class="truncate">{t(item.label)}</span>
-            {item.hash === "#/errors" && unreadErrors > 0 && (
-              <span class="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{unreadErrors > 99 ? "99+" : unreadErrors}</span>
-            )}
           </a>
         );
       })}
@@ -68,33 +67,33 @@ function NavigationLinks({ activeHash, unreadErrors = 0, onNavigate }: { activeH
   );
 }
 
-function SidebarPanel({ activeHash, unreadErrors, uptimeSeconds, onClose }: { activeHash: string; unreadErrors: number; uptimeSeconds: number | null; onClose?: () => void }) {
+function SidebarPanel({ activeHash, uptimeSeconds, onClose }: { activeHash: string; unreadErrors: number; uptimeSeconds: number | null; onClose?: () => void }) {
   const { t } = useI18n();
   return (
     <>
-      <div class="flex h-20 shrink-0 items-center gap-3 border-b border-gray-100 px-7 dark:border-border-dark">
+      <div class="flex h-[72px] shrink-0 items-center gap-3 border-b border-nx-border px-5">
         <BrandMark />
-        <div>
-          <div class="text-[1.05rem] font-bold tracking-tight text-slate-800 dark:text-text-main">Codex Proxy</div>
-          <div class="mt-0.5 text-[0.65rem] font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-text-dim">Dashboard</div>
+        <div class="min-w-0">
+          <div class="text-[15px] font-semibold tracking-[-0.02em] text-ink">{APP_BRAND}</div>
+          <div class="mt-0.5 truncate text-[11px] text-muted">{APP_DESCRIPTOR}</div>
         </div>
         {onClose && (
-          <button onClick={onClose} class="ml-auto rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-border-dark dark:hover:text-text-main" aria-label={t("closeSidebar")}>
+          <button onClick={onClose} class="ml-auto rounded-lg p-2 text-muted hover:bg-surface hover:text-ink" aria-label={t("closeSidebar")}>
             <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
           </button>
         )}
       </div>
-      <nav class="flex-1 space-y-1 overflow-y-auto px-4 py-6" aria-label="Primary navigation">
-        <NavigationLinks activeHash={activeHash} unreadErrors={unreadErrors} onNavigate={onClose} />
+      <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
+        <NavigationLinks activeHash={activeHash} onNavigate={onClose} />
       </nav>
-      <div class="m-4 rounded-xl border border-primary/15 bg-primary/5 p-4 dark:bg-primary/10">
-        <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-text-main">
-          <span class="relative flex size-2.5"><span class="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" /><span class="relative inline-flex size-2.5 rounded-full bg-primary" /></span>
+      <div class="mx-4 mb-4 border-t border-nx-border pt-4">
+        <div class="flex items-center gap-2 text-xs font-medium text-ink">
+          <span class="size-2 rounded-full bg-success" />
           {t("serverOnline")}
         </div>
-        <p class="mt-2 text-[0.7rem] font-medium text-slate-600 dark:text-text-main">{t("sidebarUptime")}: {formatUptime(uptimeSeconds)}</p>
+        <p class="mt-1 pl-4 text-[11px] text-muted">{t("sidebarUptime")}: {formatUptime(uptimeSeconds)}</p>
       </div>
     </>
   );
@@ -114,11 +113,11 @@ export function Sidebar({ activeHash, unreadErrors = 0, uptimeSeconds = null, mo
 
   return (
     <>
-      <aside class="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-gray-200 bg-white dark:border-border-dark dark:bg-card-dark lg:flex">
+      <aside class="fixed inset-y-0 left-0 z-50 hidden w-60 flex-col border-r border-nx-border bg-sidebar lg:flex">
         <SidebarPanel activeHash={activeHash} unreadErrors={unreadErrors} uptimeSeconds={uptimeSeconds} />
       </aside>
-      {mobileOpen && <button class="fixed inset-0 z-[55] bg-slate-950/45 lg:hidden" onClick={onMobileClose} aria-label={t("closeSidebar")} />}
-      <aside class={`fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-gray-200 bg-white shadow-2xl transition-transform duration-200 dark:border-border-dark dark:bg-card-dark lg:hidden ${mobileOpen ? "translate-x-0" : "pointer-events-none -translate-x-full"}`}>
+      {mobileOpen && <button class="fixed inset-0 z-[55] bg-black/55 lg:hidden" onClick={onMobileClose} aria-label={t("closeSidebar")} />}
+      <aside class={`fixed inset-y-0 left-0 z-[60] flex w-60 flex-col border-r border-nx-border bg-sidebar shadow-2xl transition-transform duration-200 lg:hidden ${mobileOpen ? "translate-x-0" : "pointer-events-none -translate-x-full"}`}>
         <SidebarPanel activeHash={activeHash} unreadErrors={unreadErrors} uptimeSeconds={uptimeSeconds} onClose={onMobileClose} />
       </aside>
     </>

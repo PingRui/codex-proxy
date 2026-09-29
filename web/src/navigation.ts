@@ -10,13 +10,16 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { hash: "", label: "overview", icon: "home" },
-  { hash: "#/accounts", label: "manageAccounts", icon: "users" },
-  { hash: "#/client-keys", label: "clientKeys", icon: "key" },
-  { hash: "#/api-keys", label: "apiKeys", icon: "api" },
-  { hash: "#/proxies", label: "proxySettings", icon: "route" },
-  { hash: "#/usage-stats", label: "usageStats", icon: "chart" },
-  { hash: "#/logs", label: "logs", icon: "document" },
-  { hash: "#/errors", label: "errorsTab", icon: "alert" },
-  { hash: "#/info", label: "infoTab", icon: "info" },
+  { hash: "#/accounts", label: "accountsNav", icon: "users" },
+  { hash: "#/api", label: "apiAccess", icon: "api" },
+  { hash: "#/activity", label: "activity", icon: "document" },
   { hash: "#/settings", label: "settings", icon: "settings" },
+  { hash: "#/about", label: "about", icon: "info" },
 ];
+
+export const LEGACY_HASH_REDIRECTS: Readonly<Record<string, string>> = {
+  "#/account-management": "#/accounts",
+  "#/info": "#/api",
+  "#/logs": "#/activity",
+  "#/proxy-settings": "#/proxies",
+};

@@ -3,16 +3,23 @@ export type LayoutMode = "sidebar" | "top";
 const LAYOUT_MODE_KEY = "codex-proxy-layout-mode";
 
 export function getLayoutMode(): LayoutMode {
+  migrateLegacyLayoutMode();
+  return "sidebar";
+}
+
+export function migrateLegacyLayoutMode(): void {
   try {
-    return localStorage.getItem(LAYOUT_MODE_KEY) === "top" ? "top" : "sidebar";
+    const saved = localStorage.getItem(LAYOUT_MODE_KEY);
+    if (saved === "top" || saved === "tabs") {
+      localStorage.setItem(LAYOUT_MODE_KEY, "sidebar");
+    }
   } catch {
-    return "sidebar";
   }
 }
 
-export function saveLayoutMode(mode: LayoutMode): void {
+export function saveLayoutMode(_mode: LayoutMode): void {
   try {
-    localStorage.setItem(LAYOUT_MODE_KEY, mode);
+    localStorage.setItem(LAYOUT_MODE_KEY, "sidebar");
   } catch {
   }
 }
