@@ -41,4 +41,9 @@ describe("AddAccount dialog", () => {
     // Verify cancelAdd is referenced in the built bundle
     expect(js).toContain("cancelAdd");
   });
+
+  it("uses a copy-only authorization flow", () => {
+    expect(js).toContain("Copy this authorization link");
+    expect(js).not.toContain("oauth_add");
+  });
 });

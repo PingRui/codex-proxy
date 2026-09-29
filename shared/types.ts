@@ -70,6 +70,15 @@ export interface Account {
   proxyName?: string;
 }
 
+export interface AccountSelectionResult {
+  selectedAccountId: string;
+  proxySelected: boolean;
+  codexSynced: boolean;
+  restartCodexRequired: boolean;
+  codexAuthPath: string;
+  warning?: string;
+}
+
 /** Public view of the single last-resort "upstream apikey" fallback account. */
 export interface FallbackUpstreamPublic {
   baseUrl: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "preact/hooks";
-import type { Account, FallbackUpstreamPublic } from "../types";
+import type { Account, AccountSelectionResult, FallbackUpstreamPublic } from "../types";
 import {
   accountExportDownloadName,
   buildAccountExportUrl,
@@ -25,6 +25,10 @@ export function useAccounts() {
   const [fallbackUpstream, setFallbackUpstream] = useState<FallbackUpstreamPublic | null>(null);
   const [fallbackActive, setFallbackActive] = useState(false);
   const [persistenceHealth, setPersistenceHealth] = useState<PersistenceHealth>({ ok: true });
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [manualMode, setManualMode] = useState(false);
+  const [selectingAccountId, setSelectingAccountId] = useState<string | null>(null);
+  const [selectionNotice, setSelectionNotice] = useState<AccountSelectionResult | null>(null);
   const addCleanupRef = useRef<(() => void) | null>(null);
 
   const loadAccounts = useCallback(async () => {
@@ -33,6 +37,8 @@ export function useAccounts() {
       const resp = await fetch("/auth/accounts?quota=true");
       const data = await resp.json();
       setList(data.accounts || []);
+      setSelectedAccountId(typeof data.selected_account_id === "string" ? data.selected_account_id : null);
+      setManualMode(data.manual_mode === true);
       if (data.fallback_upstream && typeof data.fallback_upstream === "object") {
         setFallbackUpstream(data.fallback_upstream as FallbackUpstreamPublic);
       } else {
@@ -100,9 +106,7 @@ export function useAccounts() {
       if (!resp.ok || !data.authUrl) {
         throw new Error(data.error || "failedStartLogin");
       }
-      // Show the dialog with the auth URL first — the user decides when to
-      // open it (via the "Open URL" button), instead of popping a window
-      // immediately.
+      // Show the full URL for the user to copy into their own browser.
       setAddAuthUrl(data.authUrl);
       setAddVisible(true);
 
@@ -417,6 +421,33 @@ export function useAccounts() {
     }
   }, [patchLocal]);
 
+  const selectAccount = useCallback(async (id: string): Promise<AccountSelectionResult> => {
+    setSelectingAccountId(id);
+    try {
+      const resp = await fetch(`/auth/accounts/${encodeURIComponent(id)}/select`, {
+        method: "POST",
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error || "Failed to switch account");
+      }
+      const result: AccountSelectionResult = {
+        selectedAccountId: data.selected_account_id,
+        proxySelected: data.proxy_selected === true,
+        codexSynced: data.codex_synced === true,
+        restartCodexRequired: data.restart_codex_required === true,
+        codexAuthPath: data.codex_auth_path || "",
+        warning: typeof data.warning === "string" ? data.warning : undefined,
+      };
+      setSelectedAccountId(result.selectedAccountId);
+      setSelectionNotice(result);
+      await loadAccounts();
+      return result;
+    } finally {
+      setSelectingAccountId(null);
+    }
+  }, [loadAccounts]);
+
   return {
     list,
     loading,
@@ -433,6 +464,10 @@ export function useAccounts() {
     updateFallbackUpstream,
     deleteFallbackUpstream,
     persistenceHealth,
+    selectedAccountId,
+    manualMode,
+    selectingAccountId,
+    selectionNotice,
     refresh: loadAccounts,
     patchLocal,
     startAdd,
@@ -447,5 +482,7 @@ export function useAccounts() {
     toggleStatus,
     updateLabel,
     updateCodexFingerprintMode,
+    selectAccount,
+    dismissSelectionNotice: () => setSelectionNotice(null),
   };
 }

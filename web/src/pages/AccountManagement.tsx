@@ -21,7 +21,7 @@ const statusOrder: Array<{ key: string; label: TranslationKey }> = [
 
 export function AccountManagement({ embedded }: { embedded?: boolean } = {}) {
   const t = useT();
-  const { list, loading: listLoading, batchDelete, batchSetStatus, toggleStatus, exportAccounts, importAccounts, persistenceHealth, fallbackUpstream, fallbackActive, updateFallbackUpstream, deleteFallbackUpstream } = useAccounts();
+  const { list, loading: listLoading, batchDelete, batchSetStatus, toggleStatus, exportAccounts, importAccounts, persistenceHealth, fallbackUpstream, fallbackActive, updateFallbackUpstream, deleteFallbackUpstream, selectedAccountId, manualMode, selectAccount } = useAccounts();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState("all");
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
@@ -101,6 +101,24 @@ export function AccountManagement({ embedded }: { embedded?: boolean } = {}) {
     setStatusFilter((prev) => (prev === status ? "all" : status));
   }, []);
 
+  const handleAccountSelection = useCallback(async (id: string) => {
+    if (!id || id === selectedAccountId) return;
+    setBusy(true);
+    try {
+      const result = await selectAccount(id);
+      showMessage(
+        result.codexSynced
+          ? t("restartCodexToApply")
+          : `${t("proxySwitchedCodexSyncFailed")}${result.warning ? `: ${result.warning}` : ""}`,
+        !result.codexSynced,
+      );
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : String(error), true);
+    } finally {
+      setBusy(false);
+    }
+  }, [selectAccount, selectedAccountId, showMessage, t]);
+
   const content = (
     <>
       {/* Persist-disabled banner — surfaced when accounts.json failed to load
@@ -124,6 +142,22 @@ export function AccountManagement({ embedded }: { embedded?: boolean } = {}) {
 
       {/* Import/Export toolbar (always shown) */}
       <div class="flex items-center gap-1.5 justify-end mb-3">
+        {manualMode && (
+          <select
+            aria-label={t("useThisAccount")}
+            value={selectedAccountId ?? ""}
+            disabled={busy}
+            onChange={(event) => void handleAccountSelection(event.currentTarget.value)}
+            class="max-w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-border-dark dark:bg-card-dark dark:text-text-main"
+          >
+            <option value="" disabled>{t("selectCurrentAccount")}</option>
+            {list.filter((account) => account.status === "active").map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.label || account.email || account.id}
+              </option>
+            ))}
+          </select>
+        )}
         <AccountImportExport
           onExport={exportAccounts}
           onImport={importAccounts}

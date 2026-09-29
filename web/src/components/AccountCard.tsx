@@ -95,9 +95,12 @@ interface AccountCardProps {
   onUpdateLabel?: (id: string, label: string | null) => Promise<string | null>;
   onUpdateCodexFingerprintMode?: (id: string, mode: "off" | "session") => Promise<string | null>;
   onConsumeResetCredit?: (id: string) => Promise<string | null>;
+  currentAccount?: boolean;
+  selectingAccount?: boolean;
+  onSelectAccount?: (id: string) => Promise<unknown>;
 }
 
-export function AccountCard({ account, index, onDelete, proxies, onProxyChange, selected, onToggleSelect, onRefreshQuota, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, onConsumeResetCredit }: AccountCardProps) {
+export function AccountCard({ account, index, onDelete, proxies, onProxyChange, selected, onToggleSelect, onRefreshQuota, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, onConsumeResetCredit, currentAccount = false, selectingAccount = false, onSelectAccount }: AccountCardProps) {
   const t = useT();
   const { lang } = useI18n();
   const email = account.email || "Unknown";
@@ -127,6 +130,15 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
     const err = await onDelete(account.id);
     if (err) alert(err);
   }, [account.id, onDelete, t]);
+
+  const handleSelectAccount = useCallback(async () => {
+    if (!onSelectAccount || currentAccount || selectingAccount) return;
+    try {
+      await onSelectAccount(account.id);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error));
+    }
+  }, [account.id, currentAccount, onSelectAccount, selectingAccount]);
 
   // Quota — primary window (default 0% used = 100% available for accounts without data)
   const q = account.quota;
@@ -364,6 +376,22 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0 flex-wrap">
+          {onSelectAccount && (
+            currentAccount ? (
+              <span class="px-2.5 py-1 rounded-full bg-primary-container text-primary text-xs font-semibold border border-primary/20">
+                {t("currentAccount")}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSelectAccount}
+                disabled={account.status !== "active" || selectingAccount}
+                class="px-2.5 py-1 rounded-md bg-primary-action text-white text-xs font-semibold transition-colors hover:bg-primary-action-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {selectingAccount ? t("switchingAccount") : t("useThisAccount")}
+              </button>
+            )
+          )}
           {onToggleStatus && (
             <button
               onClick={handleStatusToggle}

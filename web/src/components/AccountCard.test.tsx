@@ -92,6 +92,40 @@ describe("AccountCard proxy selector", () => {
   });
 });
 
+describe("AccountCard manual selection", () => {
+  afterEach(() => cleanup());
+
+  it("switches to an available account", async () => {
+    const selectAccount = vi.fn(async () => undefined);
+    render(
+      <AccountCard
+        account={account()}
+        index={0}
+        onDelete={vi.fn(async () => null)}
+        onSelectAccount={selectAccount}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "useThisAccount" }));
+    await waitFor(() => expect(selectAccount).toHaveBeenCalledWith("account-1"));
+  });
+
+  it("marks the selected account as current", () => {
+    render(
+      <AccountCard
+        account={account()}
+        index={0}
+        onDelete={vi.fn(async () => null)}
+        currentAccount
+        onSelectAccount={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(screen.getByText("currentAccount")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "useThisAccount" })).toBeNull();
+  });
+});
+
 describe("AccountCard Rate Limit Reset Credits", () => {
   afterEach(() => cleanup());
 

@@ -199,6 +199,12 @@ function Dashboard() {
                 fallbackActive={accounts.fallbackActive}
                 onUpdateFallbackUpstream={accounts.updateFallbackUpstream}
                 onDeleteFallbackUpstream={accounts.deleteFallbackUpstream}
+                selectedAccountId={accounts.selectedAccountId}
+                manualMode={accounts.manualMode}
+                selectingAccountId={accounts.selectingAccountId}
+                selectionNotice={accounts.selectionNotice}
+                onSelectAccount={accounts.selectAccount}
+                onDismissSelectionNotice={accounts.dismissSelectionNotice}
               />
               <ProxyPool proxies={proxies} />
             </div>

@@ -56,10 +56,6 @@ export function AddAccount({ visible, onCancel, onSubmitRelay, onAddByRefreshTok
     }
   }, [authUrl]);
 
-  const handleOpenUrl = useCallback(() => {
-    window.open(authUrl, "oauth_add", "width=600,height=700,scrollbars=yes");
-  }, [authUrl]);
-
   const handleAddFallback = useCallback(async () => {
     const baseUrl = fbBaseUrl.trim();
     const apiKey = fbApiKey.trim();
@@ -121,12 +117,9 @@ export function AddAccount({ visible, onCancel, onSubmitRelay, onAddByRefreshTok
                   {copied ? t("copied") : t("copy")}
                 </button>
               </div>
-              <button
-                onClick={handleOpenUrl}
-                class="w-full px-4 py-2.5 bg-primary-action hover:bg-primary-action-hover text-white text-sm font-semibold rounded-lg transition-colors shadow-sm active:scale-[0.98]"
-              >
-                {t("openUrl")}
-              </button>
+              <p class="text-xs text-slate-500 dark:text-text-dim">
+                {t("copyAuthorizationLink")}
+              </p>
             </div>
           )}
 

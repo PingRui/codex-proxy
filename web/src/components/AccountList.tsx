@@ -3,8 +3,9 @@ import { useI18n, useT } from "../../../shared/i18n/context";
 import { AccountCard } from "./AccountCard";
 import { AccountImportExport } from "./AccountImportExport";
 import { FallbackUpstreamCard } from "./FallbackUpstreamCard";
+import { AccountSelectionNotice } from "./AccountSelectionNotice";
 import type { AccountExportFormat } from "../../../shared/account-transfer-client";
-import type { Account, FallbackUpstreamPublic, ProxyEntry, QuotaWarning } from "../../../shared/types";
+import type { Account, AccountSelectionResult, FallbackUpstreamPublic, ProxyEntry, QuotaWarning } from "../../../shared/types";
 import { derivedStatus } from "../lib/accountStatus";
 import { accountToolbarControlClass } from "../lib/account-toolbar";
 
@@ -29,6 +30,12 @@ interface AccountListProps {
   onUpdateFallbackUpstream?: (baseUrl: string, apiKey: string) => Promise<string | null>;
   onDeleteFallbackUpstream?: () => Promise<string | null>;
   fallbackActive?: boolean;
+  selectedAccountId?: string | null;
+  manualMode?: boolean;
+  selectingAccountId?: string | null;
+  selectionNotice?: AccountSelectionResult | null;
+  onSelectAccount?: (id: string) => Promise<unknown>;
+  onDismissSelectionNotice?: () => void;
 }
 
 const PAGE_SIZE = 10;
@@ -42,7 +49,7 @@ function getBrowserStorage(): Storage | null {
   }
 }
 
-export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing, lastUpdated, proxies, onProxyChange, onExport, onImport, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, fallbackUpstream, onUpdateFallbackUpstream, onDeleteFallbackUpstream, fallbackActive = false }: AccountListProps) {
+export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing, lastUpdated, proxies, onProxyChange, onExport, onImport, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, fallbackUpstream, onUpdateFallbackUpstream, onDeleteFallbackUpstream, fallbackActive = false, selectedAccountId = null, manualMode = false, selectingAccountId = null, selectionNotice = null, onSelectAccount, onDismissSelectionNotice }: AccountListProps) {
   const t = useT();
   const { lang } = useI18n();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -350,6 +357,12 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
         )}
       </div>
       {/* Health check result banner */}
+      {selectionNotice && onDismissSelectionNotice && (
+        <AccountSelectionNotice
+          result={selectionNotice}
+          onDismiss={onDismissSelectionNotice}
+        />
+      )}
       {healthResult && (
         <div class={`px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 ${
           healthResult.dead > 0
@@ -408,7 +421,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </div>
         ) : (
           displayAccounts.slice(0, visibleCount).map((acct, i) => (
-            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={selectedIds.has(acct.id)} onToggleSelect={toggleSelect} onRefreshQuota={async (id) => {
+            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={selectedIds.has(acct.id)} onToggleSelect={toggleSelect} currentAccount={manualMode && selectedAccountId === acct.id} selectingAccount={selectingAccountId === acct.id} onSelectAccount={manualMode ? onSelectAccount : undefined} onRefreshQuota={async (id) => {
               const encoded = encodeURIComponent(id);
               const resp = await fetch(`/auth/accounts/${encoded}/quota`);
               if (!resp.ok) {
