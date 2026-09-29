@@ -1,4 +1,4 @@
-import { APP_DESCRIPTOR, APP_DISPLAY_NAME, APP_REPOSITORY_URL } from "../../../shared/brand";
+import { APP_DESCRIPTOR, APP_DISPLAY_NAME, APP_REPOSITORY_DEFAULT_BRANCH, APP_REPOSITORY_URL } from "../../../shared/brand";
 import { useT } from "../../../shared/i18n/context";
 
 interface AboutPageProps {
@@ -8,8 +8,8 @@ interface AboutPageProps {
 
 export function AboutPage({ version, commit }: AboutPageProps) {
   const t = useT();
-  const noticeUrl = `${APP_REPOSITORY_URL}/blob/main/NOTICE.md`;
-  const thirdPartyUrl = `${APP_REPOSITORY_URL}/blob/main/THIRD_PARTY_NOTICES.md`;
+  const noticeUrl = `${APP_REPOSITORY_URL}/blob/${APP_REPOSITORY_DEFAULT_BRANCH}/NOTICE.md`;
+  const thirdPartyUrl = `${APP_REPOSITORY_URL}/blob/${APP_REPOSITORY_DEFAULT_BRANCH}/THIRD_PARTY_NOTICES.md`;
 
   return (
     <section class="max-w-3xl border border-nx-border bg-surface">

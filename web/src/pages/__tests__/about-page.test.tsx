@@ -16,7 +16,7 @@ describe("AboutPage", () => {
     expect(screen.getByText("2.1.8")).toBeTruthy();
     expect(screen.getByText("abc123")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Source repository" }).getAttribute("href")).toBe("https://github.com/PingRui/codex-proxy");
-    expect(screen.getByRole("link", { name: "NOTICE" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Third-party notices" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "NOTICE" }).getAttribute("href")).toBe("https://github.com/PingRui/codex-proxy/blob/dev/NOTICE.md");
+    expect(screen.getByRole("link", { name: "Third-party notices" }).getAttribute("href")).toBe("https://github.com/PingRui/codex-proxy/blob/dev/THIRD_PARTY_NOTICES.md");
   });
 });
