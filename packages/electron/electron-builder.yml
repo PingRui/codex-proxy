@@ -1,13 +1,13 @@
-appId: com.codex-proxy.app
-productName: Codex Proxy
+appId: io.nexora.gateway
+productName: NEXORA
 electronVersion: "35.7.5"
 
 publish:
   provider: github
-  owner: icebear0828
+  owner: PingRui
   repo: codex-proxy
 
-artifactName: "Codex-Proxy-${version}-${os}-${arch}.${ext}"
+artifactName: "NEXORA-${version}-${os}-${arch}.${ext}"
 
 directories:
   output: release

@@ -1,10 +1,10 @@
 {
   "name": "@codex-proxy/electron",
   "version": "2.0.77",
-  "description": "Codex Proxy desktop app (Electron shell)",
+  "description": "NEXORA multi-account AI gateway",
   "private": true,
   "main": "dist-electron/main.cjs",
-  "author": "codex-proxy",
+  "author": "PingRui",
   "scripts": {
     "build": "node electron/build.mjs",
     "dev": "cd ../.. && npm run build && cd packages/electron && npm run build && electron .",

@@ -301,7 +301,7 @@ describe("self-update", () => {
         // 2nd call: GHCR tags
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ name: "icebear0828/codex-proxy", tags: registryTags }),
+          json: () => Promise.resolve({ name: "PingRui/codex-proxy", tags: registryTags }),
           headers: new Headers(),
         });
 
@@ -497,7 +497,7 @@ describe("self-update", () => {
         json: () => Promise.resolve({
           tag_name: "v2.0.0",
           body: "Lite release notes",
-          html_url: "https://github.com/icebear0828/codex-proxy/releases/tag/v2.0.0",
+          html_url: "https://github.com/PingRui/codex-proxy/releases/tag/v2.0.0",
           published_at: "2026-09-04T00:00:00Z",
         }),
       });

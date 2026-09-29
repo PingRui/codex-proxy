@@ -17,6 +17,7 @@ const ROOT_DIR = resolve(PKG_DIR, "..", "..");
 interface BuilderConfig {
   appId: string;
   productName: string;
+  artifactName: string;
   electronVersion: string;
   publish: { provider: string; owner: string; repo: string };
   directories: { output: string };
@@ -38,15 +39,16 @@ const config = yaml.load(
 
 describe("electron-builder.yml", () => {
   it("has valid YAML structure", () => {
-    expect(config.appId).toBe("com.codex-proxy.app");
-    expect(config.productName).toBe("Codex Proxy");
+    expect(config.appId).toBe("io.nexora.gateway");
+    expect(config.productName).toBe("NEXORA");
+    expect(config.artifactName).toBe("NEXORA-${version}-${os}-${arch}.${ext}");
     expect(config.electronVersion).toBeDefined();
   });
 
   it("has valid publish config", () => {
     expect(config.publish.provider).toBe("github");
-    expect(config.publish.owner).toBeDefined();
-    expect(config.publish.repo).toBeDefined();
+    expect(config.publish.owner).toBe("PingRui");
+    expect(config.publish.repo).toBe("codex-proxy");
   });
 
   it("references existing icon file", () => {
