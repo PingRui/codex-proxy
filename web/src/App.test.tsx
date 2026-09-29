@@ -3,7 +3,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup, screen, within } from "@testing-library/preact";
 import { I18nProvider } from "../../shared/i18n/context";
 import { Sidebar } from "./components/Sidebar";
-import { LEGACY_HASH_REDIRECTS } from "./navigation";
+import { LEGACY_HASH_REDIRECTS, resolveAppRouteHash } from "./navigation";
 
 afterEach(() => {
   cleanup();
@@ -38,5 +38,10 @@ describe("NEXORA workspace shell", () => {
       "#/logs": "#/activity",
       "#/account-management": "#/accounts",
     });
+  });
+
+  it("normalizes unknown hashes to Overview", () => {
+    expect(resolveAppRouteHash("#/unknown-page")).toBe("");
+    expect(resolveAppRouteHash("#/accounts")).toBe("#/accounts");
   });
 });

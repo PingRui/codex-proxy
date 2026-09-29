@@ -106,7 +106,7 @@ describe("AccountCard manual selection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "useThisAccount" }));
+    fireEvent.click(screen.getByRole("button", { name: "useAsGatewayAccount" }));
     await waitFor(() => expect(selectAccount).toHaveBeenCalledWith("account-1"));
   });
 
@@ -121,8 +121,8 @@ describe("AccountCard manual selection", () => {
       />,
     );
 
-    expect(screen.getByText("currentAccount")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "useThisAccount" })).toBeNull();
+    expect(screen.getByText("currentGatewayAccount")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "useAsGatewayAccount" })).toBeNull();
   });
 });
 

@@ -9,22 +9,20 @@ interface AccountSelectionNoticeProps {
 export function AccountSelectionNotice({ result, onDismiss }: AccountSelectionNoticeProps) {
   const t = useT();
   const success = result.codexSynced;
+  const message = success
+    ? t("gatewaySwitchSuccess")
+    : t("gatewaySwitchSyncFailed", { warning: result.warning || result.codexAuthPath || "—" });
 
   return (
     <div
       role="status"
       class={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
         success
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300"
-          : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300"
+          ? "border-success/30 bg-success-container text-success"
+          : "border-warning/30 bg-warning-container text-warning"
       }`}
     >
-      <div>
-        <div class="font-semibold">
-          {success ? t("restartCodexToApply") : t("proxySwitchedCodexSyncFailed")}
-        </div>
-        {!success && result.warning && <div class="mt-1 text-xs">{result.warning}</div>}
-      </div>
+      <div class="font-semibold">{message}</div>
       <button
         type="button"
         onClick={onDismiss}

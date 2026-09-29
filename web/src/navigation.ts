@@ -23,3 +23,18 @@ export const LEGACY_HASH_REDIRECTS: Readonly<Record<string, string>> = {
   "#/logs": "#/activity",
   "#/proxy-settings": "#/proxies",
 };
+
+const APP_ROUTE_HASHES = new Set([
+  ...NAV_ITEMS.map((item) => item.hash),
+  "#/client-keys",
+  "#/api-keys",
+  "#/proxies",
+  "#/usage-stats",
+  "#/errors",
+]);
+
+export function resolveAppRouteHash(hash: string): string {
+  const normalizedHash = hash === "#/" ? "" : hash;
+  const requestedHash = LEGACY_HASH_REDIRECTS[normalizedHash] ?? normalizedHash;
+  return APP_ROUTE_HASHES.has(requestedHash) ? requestedHash : "";
+}

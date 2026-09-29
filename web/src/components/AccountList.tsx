@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "preact/hooks";
 import { useI18n, useT } from "../../../shared/i18n/context";
 import { AccountCard } from "./AccountCard";
+import { AccountBulkActions } from "./AccountBulkActions";
 import { AccountImportExport } from "./AccountImportExport";
 import { FallbackUpstreamCard } from "./FallbackUpstreamCard";
 import { AccountSelectionNotice } from "./AccountSelectionNotice";
@@ -23,6 +24,8 @@ interface AccountListProps {
   onProxyChange?: (accountId: string, proxyId: string) => void;
   onExport?: (selectedIds?: string[], format?: AccountExportFormat) => Promise<void>;
   onImport?: (file: File) => Promise<{ success: boolean; added: number; updated: number; failed: number; errors: string[] }>;
+  onBatchDelete?: (ids: string[]) => Promise<string | null>;
+  onBatchSetStatus?: (ids: string[], status: "active" | "disabled") => Promise<string | null>;
   onToggleStatus?: (id: string, currentStatus: string) => Promise<string | null>;
   onUpdateLabel?: (id: string, label: string | null) => Promise<string | null>;
   onUpdateCodexFingerprintMode?: (id: string, mode: "off" | "session") => Promise<string | null>;
@@ -31,7 +34,6 @@ interface AccountListProps {
   onDeleteFallbackUpstream?: () => Promise<string | null>;
   fallbackActive?: boolean;
   selectedAccountId?: string | null;
-  manualMode?: boolean;
   selectingAccountId?: string | null;
   selectionNotice?: AccountSelectionResult | null;
   onSelectAccount?: (id: string) => Promise<unknown>;
@@ -49,7 +51,7 @@ function getBrowserStorage(): Storage | null {
   }
 }
 
-export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing, lastUpdated, proxies, onProxyChange, onExport, onImport, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, fallbackUpstream, onUpdateFallbackUpstream, onDeleteFallbackUpstream, fallbackActive = false, selectedAccountId = null, manualMode = false, selectingAccountId = null, selectionNotice = null, onSelectAccount, onDismissSelectionNotice }: AccountListProps) {
+export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing, lastUpdated, proxies, onProxyChange, onExport, onImport, onBatchDelete, onBatchSetStatus, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, fallbackUpstream, onUpdateFallbackUpstream, onDeleteFallbackUpstream, fallbackActive = false, selectedAccountId = null, selectingAccountId = null, selectionNotice = null, onSelectAccount, onDismissSelectionNotice }: AccountListProps) {
   const t = useT();
   const { lang } = useI18n();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -68,6 +70,29 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
   });
   const [refreshingExpired, setRefreshingExpired] = useState(false);
   const [deleteResult, setDeleteResult] = useState<string | null>(null);
+  const [maintenanceBusy, setMaintenanceBusy] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+
+  const runBatchAction = useCallback(async (action: "delete" | "active" | "disabled") => {
+    if (selectedIds.size === 0) return;
+    setMaintenanceBusy(true);
+    try {
+      const ids = [...selectedIds];
+      const error = action === "delete"
+        ? await onBatchDelete?.(ids)
+        : await onBatchSetStatus?.(ids, action);
+      if (error) {
+        setDeleteResult(error);
+      } else {
+        setSelectedIds(new Set());
+        setDeleteResult(t(action === "delete" ? "deleteSuccess" : "statusChangeSuccess"));
+        onRefresh();
+      }
+      setTimeout(() => setDeleteResult(null), 5000);
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  }, [onBatchDelete, onBatchSetStatus, onRefresh, selectedIds, t]);
 
   const runRefreshExpired = useCallback(async () => {
     const expiredIds = accounts.filter((a) => a.status === "expired").map((a) => a.id);
@@ -274,26 +299,6 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </svg>
           <span class="hidden sm:inline">{healthChecking ? t("healthChecking") : t("healthCheck")}</span>
         </button>
-        {/* Import / Export */}
-        {onExport && onImport && (
-          <AccountImportExport onExport={onExport} onImport={onImport} selectedIds={selectedIds} />
-        )}
-        {/* Select all */}
-        {accounts.length > 0 && (
-          <button
-            onClick={toggleSelectAll}
-            class={accountToolbarControlClass}
-          >
-            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              {selectedIds.size === accounts.length ? (
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              ) : (
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              )}
-            </svg>
-            <span class="hidden sm:inline">{selectedIds.size === accounts.length ? t("deselectAll") : t("selectAll")}</span>
-          </button>
-        )}
         {/* Status filter dropdown */}
         <select
           value={statusFilter}
@@ -307,31 +312,6 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           {statusCounts.rate_limited ? <option value="rate_limited">{t("filterRateLimited")} ({statusCounts.rate_limited})</option> : null}
           {statusCounts.disabled ? <option value="disabled">{t("filterDisabled")} ({statusCounts.disabled})</option> : null}
         </select>
-        {/* Refresh expired tokens */}
-        {expiredCount > 0 && (
-          <button
-            onClick={runRefreshExpired}
-            disabled={refreshingExpired}
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-text-dim hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <svg class={`size-3.5 ${refreshingExpired ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-            <span class="hidden sm:inline">{refreshingExpired ? t("refreshingExpired") : t("refreshExpired")}</span>
-          </button>
-        )}
-        {/* Delete invalid accounts */}
-        {invalidCount > 0 && (
-          <button
-            onClick={deleteInvalid}
-            class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-text-dim hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          >
-            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-            </svg>
-            <span class="hidden sm:inline">{t("deleteInvalid")}</span>
-          </button>
-        )}
         {/* Pagination — right side */}
         {!loading && displayAccounts.length > PAGE_SIZE && (
           <div class="flex items-center gap-2 ml-auto pl-3 border-l border-gray-200 dark:border-border-dark">
@@ -356,6 +336,47 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </div>
         )}
       </div>
+      <details
+        open={maintenanceOpen}
+        onToggle={(event) => setMaintenanceOpen(event.currentTarget.open)}
+        class="border-y border-nx-border py-3"
+      >
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-ink marker:hidden">
+          <span>{t("accountMaintenance")}</span>
+          <span class="text-xs font-normal text-muted">{t("accountMaintenanceHint")}</span>
+        </summary>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          {onExport && onImport && (
+            <AccountImportExport onExport={onExport} onImport={onImport} selectedIds={selectedIds} />
+          )}
+          {accounts.length > 0 && (
+            <button onClick={toggleSelectAll} class={accountToolbarControlClass}>
+              <span>{selectedIds.size === accounts.length ? t("deselectAll") : t("selectAll")}</span>
+            </button>
+          )}
+          {expiredCount > 0 && (
+            <button onClick={runRefreshExpired} disabled={refreshingExpired} class={accountToolbarControlClass}>
+              {refreshingExpired ? t("refreshingExpired") : t("refreshExpired")}
+            </button>
+          )}
+          {invalidCount > 0 && (
+            <button onClick={deleteInvalid} class={accountToolbarControlClass}>
+              {t("deleteInvalid")}
+            </button>
+          )}
+        </div>
+        {onBatchDelete && onBatchSetStatus && (
+          <div class="mt-3">
+            <AccountBulkActions
+              selectedCount={selectedIds.size}
+              loading={maintenanceBusy}
+              onBatchDelete={() => void runBatchAction("delete")}
+              onSetActive={() => void runBatchAction("active")}
+              onSetDisabled={() => void runBatchAction("disabled")}
+            />
+          </div>
+        )}
+      </details>
       {/* Health check result banner */}
       {selectionNotice && onDismissSelectionNotice && (
         <AccountSelectionNotice
@@ -421,7 +442,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </div>
         ) : (
           displayAccounts.slice(0, visibleCount).map((acct, i) => (
-            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={selectedIds.has(acct.id)} onToggleSelect={toggleSelect} currentAccount={manualMode && selectedAccountId === acct.id} selectingAccount={selectingAccountId === acct.id} onSelectAccount={manualMode ? onSelectAccount : undefined} onRefreshQuota={async (id) => {
+            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={maintenanceOpen && selectedIds.has(acct.id)} onToggleSelect={maintenanceOpen ? toggleSelect : undefined} currentAccount={selectedAccountId === acct.id} selectingAccount={selectingAccountId === acct.id} onSelectAccount={onSelectAccount} onRefreshQuota={async (id) => {
               const encoded = encodeURIComponent(id);
               const resp = await fetch(`/auth/accounts/${encoded}/quota`);
               if (!resp.ok) {

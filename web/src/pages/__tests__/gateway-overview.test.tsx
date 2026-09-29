@@ -93,7 +93,6 @@ describe("GatewayOverview", () => {
 
     renderOverview(accounts);
 
-    expect(screen.getByText("Proxy switched, but Codex credentials could not be updated")).toBeTruthy();
-    expect(screen.getByText("Unable to update Codex auth.json")).toBeTruthy();
+    expect(screen.getByText("Gateway account switched. Codex Desktop sync failed: Unable to update Codex auth.json")).toBeTruthy();
   });
 });

@@ -118,7 +118,7 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
   const winImageRequests = usage.window_image_request_count ?? 0;
   const winImageRequestsFailed = usage.window_image_request_failed_count ?? 0;
   const hasImageActivity = imageRequests > 0 || imageRequestsFailed > 0 || imageTokens > 0;
-  const plan = account.planType || t("freeTier");
+  const plan = account.planType || t("planNotReported");
   const windowSec = account.quota?.rate_limit?.limit_window_seconds;
   const windowDur = windowSec ? formatWindowDuration(windowSec, lang) : null;
 
@@ -319,7 +319,7 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
   }, [account.id, fingerprintUpdating, onUpdateCodexFingerprintMode, t]);
 
   return (
-    <div class={`bg-white dark:bg-card-dark border rounded-xl p-4 shadow-sm hover:shadow-md transition-all ${selected ? "border-primary ring-1 ring-primary/30" : "border-gray-200 dark:border-border-dark hover:border-primary/30 dark:hover:border-primary/50"}`}>
+    <div data-account-id={account.id} class={`border bg-surface p-4 transition-colors ${selected ? "border-accent ring-1 ring-accent/30" : currentAccount ? "border-accent/40" : "border-nx-border hover:border-accent/35"}`}>
       {/* Header */}
       <div class="flex flex-wrap justify-between items-start gap-2 mb-4">
         <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -376,21 +376,10 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0 flex-wrap">
-          {onSelectAccount && (
-            currentAccount ? (
-              <span class="px-2.5 py-1 rounded-full bg-primary-container text-primary text-xs font-semibold border border-primary/20">
-                {t("currentAccount")}
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSelectAccount}
-                disabled={account.status !== "active" || selectingAccount}
-                class="px-2.5 py-1 rounded-md bg-primary-action text-white text-xs font-semibold transition-colors hover:bg-primary-action-hover disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {selectingAccount ? t("switchingAccount") : t("useThisAccount")}
-              </button>
-            )
+          {onSelectAccount && currentAccount && (
+            <span class="border border-accent/30 bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent-strong">
+              {t("currentGatewayAccount")}
+            </span>
           )}
           {onToggleStatus && (
             <button
@@ -434,6 +423,17 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
           </button>
         </div>
       </div>
+
+      {onSelectAccount && !currentAccount && (
+        <button
+          type="button"
+          onClick={handleSelectAccount}
+          disabled={account.status !== "active" || selectingAccount}
+          class="mb-4 flex h-10 w-full items-center justify-center bg-accent-strong px-4 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {selectingAccount ? t("switchingAccount") : t("useAsGatewayAccount")}
+        </button>
+      )}
 
       {/* Stats */}
       <div class="space-y-2">

@@ -19,7 +19,7 @@ import { ProxyPool } from "./components/ProxyPool";
 import { SettingsTab } from "./components/SettingsTab";
 import { UpdateModal } from "./components/UpdateModal";
 import { migrateLegacyLayoutMode } from "./lib/layout-preferences";
-import { LEGACY_HASH_REDIRECTS, NAV_ITEMS } from "./navigation";
+import { LEGACY_HASH_REDIRECTS, NAV_ITEMS, resolveAppRouteHash } from "./navigation";
 import { AccountManagement } from "./pages/AccountManagement";
 import { ClientKeysPage } from "./pages/ClientKeysPage";
 import { ErrorsPage } from "./pages/ErrorsPage";
@@ -114,12 +114,17 @@ function Dashboard() {
   }, [update.hasUpdate, update.proxyUpdateInfo?.mode, update.showUpdateDialog]);
 
   const normalizedHash = hash === "#/" ? "" : hash;
-  const routeHash = LEGACY_HASH_REDIRECTS[normalizedHash] ?? normalizedHash;
+  const requestedHash = LEGACY_HASH_REDIRECTS[normalizedHash] ?? normalizedHash;
+  const routeHash = resolveAppRouteHash(hash);
 
   useEffect(() => {
     const redirect = LEGACY_HASH_REDIRECTS[normalizedHash];
-    if (redirect && location.hash !== redirect) location.hash = redirect;
-  }, [normalizedHash]);
+    if (redirect && location.hash !== redirect) {
+      location.hash = redirect;
+    } else if (normalizedHash && resolveAppRouteHash(requestedHash) === "") {
+      location.hash = "#/";
+    }
+  }, [normalizedHash, requestedHash]);
 
   const activeHash = NAV_ITEMS.some((item) => item.hash === routeHash)
     ? routeHash
@@ -159,7 +164,7 @@ function Dashboard() {
       footer={<Footer updateStatus={update.status} />}
     >
       <div class="flex w-full flex-col">
-        {pageTitle && routeHash !== "" && <PageHeader title={t(pageTitle.label)} />}
+        {pageTitle && routeHash !== "" && routeHash !== "#/accounts" && <PageHeader title={t(pageTitle.label)} />}
 
         <AddAccount
           visible={accounts.addVisible}
@@ -175,7 +180,7 @@ function Dashboard() {
 
         {routeHash === "" && <GatewayOverview accounts={accounts} status={status} onAddAccount={accounts.startAdd} />}
 
-        {routeHash === "#/accounts" && <AccountManagement embedded />}
+        {routeHash === "#/accounts" && <AccountManagement accounts={accounts} onAddAccount={accounts.startAdd} />}
         {routeHash === "#/client-keys" && <ClientKeysPage masterApiKey={status.apiKey} />}
         {routeHash === "#/api-keys" && <ApiKeyManager />}
         {routeHash === "#/proxies" && (
