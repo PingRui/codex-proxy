@@ -10,8 +10,8 @@ import { checkDockerRegistryVersion } from "@src/self-update.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-const GHCR_TOKEN_URL = "https://ghcr.io/token?service=ghcr.io&scope=repository:PingRui/codex-proxy:pull";
-const GHCR_TAGS_URL = "https://ghcr.io/v2/PingRui/codex-proxy/tags/list";
+const GHCR_TOKEN_URL = "https://ghcr.io/token?service=ghcr.io&scope=repository:pingrui/codex-proxy:pull";
+const GHCR_TAGS_URL = "https://ghcr.io/v2/pingrui/codex-proxy/tags/list";
 
 function mockFetchSequence(...responses: Array<{ ok: boolean; json: () => Promise<unknown> }>): void {
   const fn = vi.fn() as ReturnType<typeof vi.fn>;
@@ -28,7 +28,7 @@ function tokenResponse(token = "test-token") {
 function tagsResponse(tags: string[]) {
   return {
     ok: true,
-    json: async () => ({ name: "PingRui/codex-proxy", tags }),
+    json: async () => ({ name: "pingrui/codex-proxy", tags }),
     headers: new Headers(),
   };
 }
@@ -128,15 +128,15 @@ describe("checkDockerRegistryVersion", () => {
       // Page 1: returns Link header for next page
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ name: "PingRui/codex-proxy", tags: ["v1.0.0", "v1.0.1"] }),
+        json: async () => ({ name: "pingrui/codex-proxy", tags: ["v1.0.0", "v1.0.1"] }),
         headers: new Headers({
-          link: '</v2/PingRui/codex-proxy/tags/list?last=v1.0.1>; rel="next"',
+          link: '</v2/pingrui/codex-proxy/tags/list?last=v1.0.1>; rel="next"',
         }),
       })
       // Page 2: no Link header (last page)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ name: "PingRui/codex-proxy", tags: ["v2.0.0", "latest"] }),
+        json: async () => ({ name: "pingrui/codex-proxy", tags: ["v2.0.0", "latest"] }),
         headers: new Headers(),
       });
     vi.stubGlobal("fetch", fetchMock);

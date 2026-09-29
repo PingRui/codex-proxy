@@ -78,7 +78,12 @@ function hardRestart(cwd: string): void {
 const execFileAsync = promisify(execFile);
 
 const GITHUB_REPO = "PingRui/codex-proxy";
-const GHCR_IMAGE = "PingRui/codex-proxy";
+// OCI repository names are lowercase even when the GitHub owner uses capitals.
+const GHCR_IMAGE = "pingrui/codex-proxy";
+// NEXORA currently publishes and documents `dev` as the repository's default
+// source distribution branch. Keep every git-based check/apply operation on the
+// same explicit branch so self-update never merges a different branch into it.
+const GIT_UPDATE_BRANCH = "dev";
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const INITIAL_DELAY_MS = 10_000; // 10 seconds after startup
 
@@ -223,11 +228,11 @@ export function getCachedProxyUpdateResult(): ProxySelfUpdateResult | null {
   return _cachedResult;
 }
 
-/** Get commit log between HEAD and origin/master. */
+/** Get commit log between HEAD and the configured source distribution branch. */
 async function getCommitLog(cwd: string): Promise<CommitInfo[]> {
   try {
     const { stdout } = await execFileAsync(
-      "git", ["log", "HEAD..origin/master", "--oneline", "--format=%h %s"],
+      "git", ["log", `HEAD..origin/${GIT_UPDATE_BRANCH}`, "--oneline", "--format=%h %s"],
       { cwd, timeout: 10000 },
     );
     return stdout.trim().split("\n")
@@ -244,11 +249,11 @@ async function getCommitLog(cwd: string): Promise<CommitInfo[]> {
   }
 }
 
-/** Extract [Unreleased] section from CHANGELOG.md on origin/master. */
+/** Extract [Unreleased] from the configured source distribution branch. */
 async function getRemoteChangelog(cwd: string): Promise<string | null> {
   try {
     const { stdout } = await execFileAsync(
-      "git", ["show", "origin/master:CHANGELOG.md"],
+      "git", ["show", `origin/${GIT_UPDATE_BRANCH}:CHANGELOG.md`],
       { cwd, timeout: 5000 },
     );
     const marker = "## [Unreleased]";
@@ -406,7 +411,7 @@ export async function checkProxySelfUpdate(): Promise<ProxySelfUpdateResult> {
     } catch { /* ignore */ }
 
     try {
-      await execFileAsync("git", ["fetch", "origin", "master", "--quiet"], { cwd, timeout: 30000 });
+      await execFileAsync("git", ["fetch", "origin", GIT_UPDATE_BRANCH, "--quiet"], { cwd, timeout: 30000 });
     } catch (err) {
       console.warn("[SelfUpdate] git fetch failed:", err instanceof Error ? err.message : err);
       const result: ProxySelfUpdateResult = {
@@ -421,12 +426,12 @@ export async function checkProxySelfUpdate(): Promise<ProxySelfUpdateResult> {
     let latestCommit: string | null = null;
     try {
       const { stdout: countOut } = await execFileAsync(
-        "git", ["rev-list", "HEAD..origin/master", "--count"], { cwd, timeout: 5000 },
+        "git", ["rev-list", `HEAD..origin/${GIT_UPDATE_BRANCH}`, "--count"], { cwd, timeout: 5000 },
       );
       commitsBehind = parseInt(countOut.trim(), 10) || 0;
 
       const { stdout: latestOut } = await execFileAsync(
-        "git", ["rev-parse", "--short", "origin/master"], { cwd, timeout: 5000 },
+        "git", ["rev-parse", "--short", `origin/${GIT_UPDATE_BRANCH}`], { cwd, timeout: 5000 },
       );
       latestCommit = latestOut.trim() || null;
     } catch { /* ignore */ }
@@ -512,16 +517,15 @@ export async function applyProxySelfUpdate(
   const report = onProgress ?? (() => {});
 
   try {
-    // Safety: refuse to auto-update on a non-master branch. Pulling master
-    // into dev (or any other branch) corrupts the branch model and breaks
-    // the dev→master promote workflow.
+    // Safety: update only the branch this distribution publishes. Pulling a
+    // different branch into local work would corrupt the user's branch model.
     const { stdout: branchOut } = await execFileAsync(
       "git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd, timeout: 5000 },
     );
     const currentBranch = branchOut.trim();
-    if (currentBranch !== "master" && currentBranch !== "main") {
+    if (currentBranch !== GIT_UPDATE_BRANCH) {
       _proxyUpdateInProgress = false;
-      const msg = `Refusing to auto-update on branch '${currentBranch}' — only master/main are eligible. Switch branches or update manually.`;
+      const msg = `Refusing to auto-update on branch '${currentBranch}' — only ${GIT_UPDATE_BRANCH} is eligible. Switch branches or update manually.`;
       console.warn(`[SelfUpdate] ${msg}`);
       return { started: false, error: msg };
     }
@@ -541,7 +545,7 @@ export async function applyProxySelfUpdate(
 
     report("pull", "running");
     console.log("[SelfUpdate] Pulling latest code...");
-    await execFileAsync("git", ["pull", "origin", "master"], { cwd, timeout: 60000 });
+    await execFileAsync("git", ["pull", "origin", GIT_UPDATE_BRANCH], { cwd, timeout: 60000 });
     report("pull", "done");
 
     report("install", "running");
