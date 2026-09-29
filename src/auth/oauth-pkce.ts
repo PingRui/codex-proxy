@@ -362,11 +362,11 @@ let activeCallbackServer: Server | null = null;
  * Auto-closes after 5 minutes or after a successful callback.
  *
  * @param port      The port from createOAuthSession() (always 1455)
- * @param onAccount Called with (accessToken, refreshToken) on success
+ * @param onAccount Called with the complete token response on success
  */
 export function startCallbackServer(
   port: number,
-  onAccount: (accessToken: string, refreshToken: string | undefined) => void,
+  onAccount: (tokens: TokenResponse) => void,
 ): Server {
   // Close any existing callback server on this port
   if (activeCallbackServer) {
@@ -419,7 +419,7 @@ export function startCallbackServer(
 
     try {
       const tokens = await exchangeCode(code, session.codeVerifier, session.redirectUri);
-      onAccount(tokens.access_token, tokens.refresh_token);
+      onAccount(tokens);
       deleteSession(state);
       markSessionCompleted(state);
       console.log(`[OAuth] Callback server on port ${port} — login successful`);
@@ -551,13 +551,25 @@ export interface CliAuthJson {
 export function startOAuthFlow(
   originalHost: string,
   returnTo: "login" | "dashboard",
-  pool: { addAccount(accessToken: string, refreshToken?: string): string },
+  pool: {
+    addOAuthAccount(credentials: {
+      accessToken: string;
+      refreshToken?: string;
+      idToken?: string;
+      lastRefresh: string;
+    }): string;
+  },
   scheduler: { scheduleOne(entryId: string, accessToken: string): void },
 ): { authUrl: string; state: string } {
   const { authUrl, state, port } = createOAuthSession(originalHost, returnTo);
-  startCallbackServer(port, (accessToken, refreshToken) => {
-    const entryId = pool.addAccount(accessToken, refreshToken);
-    scheduler.scheduleOne(entryId, accessToken);
+  startCallbackServer(port, (tokens) => {
+    const entryId = pool.addOAuthAccount({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      idToken: tokens.id_token,
+      lastRefresh: new Date().toISOString(),
+    });
+    scheduler.scheduleOne(entryId, tokens.access_token);
     markSessionCompleted(state);
     console.log(`[Auth] OAuth via callback server — account ${entryId} added`);
   });

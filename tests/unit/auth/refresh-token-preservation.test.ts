@@ -19,6 +19,7 @@ import { setConfigForTesting, resetConfigForTesting } from "@src/config.js";
 type TokenResponse = {
   access_token: string;
   refresh_token?: string | null;
+  id_token?: string;
   token_type: string;
 };
 
@@ -107,6 +108,7 @@ describe("refresh token preservation", () => {
     nextRefreshResponse = {
       access_token: makeFreshJwt(3600),
       refresh_token: newRT,
+      id_token: "id-token-rotated",
       token_type: "Bearer",
     };
 
@@ -118,7 +120,11 @@ describe("refresh token preservation", () => {
       rateLimitBackoffSeconds: 60,
     });
 
-    const entryId = pool.addAccount(makeExpiredJwt(), originalRT);
+    const entryId = pool.addOAuthAccount({
+      accessToken: makeExpiredJwt(),
+      refreshToken: originalRT,
+      idToken: "id-token-original",
+    });
 
     const { RefreshScheduler } = await import("@src/auth/refresh-scheduler.js");
     const scheduler = new RefreshScheduler(pool);
@@ -128,6 +134,8 @@ describe("refresh token preservation", () => {
 
     const entry = pool.getEntry(entryId);
     expect(entry?.refreshToken).toBe(newRT);
+    expect(entry?.idToken).toBe("id-token-rotated");
+    expect(entry?.lastRefresh).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
     scheduler.destroy();
     pool.destroy();
@@ -149,7 +157,11 @@ describe("refresh token preservation", () => {
       rateLimitBackoffSeconds: 60,
     });
 
-    const entryId = pool.addAccount(makeExpiredJwt(), originalRT);
+    const entryId = pool.addOAuthAccount({
+      accessToken: makeExpiredJwt(),
+      refreshToken: originalRT,
+      idToken: "id-token-must-survive",
+    });
 
     const { RefreshScheduler } = await import("@src/auth/refresh-scheduler.js");
     const scheduler = new RefreshScheduler(pool);
@@ -158,6 +170,7 @@ describe("refresh token preservation", () => {
 
     const entry = pool.getEntry(entryId);
     expect(entry?.refreshToken).toBe(originalRT);
+    expect(entry?.idToken).toBe("id-token-must-survive");
 
     scheduler.destroy();
     pool.destroy();

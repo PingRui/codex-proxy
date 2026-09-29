@@ -270,12 +270,22 @@ export class RefreshScheduler {
         const isOneTimeRT = entry.refreshToken.startsWith("oaistb_rt_");
         const tokens = await refreshAccessToken(entry.refreshToken, accountProxyUrl);
 
-        // updateToken guards against clearing RT — safe to pass tokens.refresh_token directly.
-        // If the server returned no new RT, the existing one is preserved.
+        // updateOAuthCredentials guards against clearing RT/ID token when the
+        // issuer omits either field from a successful refresh response.
         if (!tokens.refresh_token) {
           console.warn(`[RefreshScheduler] Account ${entryId}: server returned no new RT, keeping existing`);
         }
-        this.pool.updateToken(entryId, tokens.access_token, tokens.refresh_token ?? undefined);
+        if (typeof this.pool.updateOAuthCredentials === "function") {
+          this.pool.updateOAuthCredentials(entryId, {
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+            idToken: tokens.id_token,
+            lastRefresh: new Date().toISOString(),
+          });
+        } else {
+          // Backward compatibility for older embedded AccountPool adapters.
+          this.pool.updateToken(entryId, tokens.access_token, tokens.refresh_token);
+        }
         const rtType = isOneTimeRT ? " (oaistb_rt_ → rotated)" : "";
         console.log(`[RefreshScheduler] Account ${entryId} refreshed successfully${rtType}`);
         this.scheduleOne(entryId, tokens.access_token);

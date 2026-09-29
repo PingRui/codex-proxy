@@ -94,11 +94,7 @@ export class AccountImportService {
           continue;
         }
 
-        const entryId = this.pool.addAccount(
-          resolved.token,
-          resolved.rt,
-          resolved.metadata,
-        );
+        const entryId = this.addResolvedAccount(resolved);
         this.scheduler.scheduleOne(entryId, resolved.token);
 
         if (entry.label) {
@@ -181,11 +177,7 @@ export class AccountImportService {
       }
     }
 
-    const entryId = this.pool.addAccount(
-      resolved.token,
-      resolved.rt,
-      resolved.metadata,
-    );
+    const entryId = this.addResolvedAccount(resolved);
     this.scheduler.scheduleOne(entryId, resolved.token);
 
     // Cache quota from verification (so dashboard shows data immediately)
@@ -206,7 +198,14 @@ export class AccountImportService {
   private async resolveToken(
     entry: ImportEntry,
   ): Promise<
-    | { ok: true; token: string; rt: string | null; metadata: CodexTokenMetadata }
+    | {
+        ok: true;
+        token: string;
+        rt: string | null;
+        idToken: string | null;
+        lastRefresh: string | null;
+        metadata: CodexTokenMetadata;
+      }
     | { ok: false; error: string; kind: "validation" | "refresh_failed" }
   > {
     const token = entry.token?.trim();
@@ -239,7 +238,14 @@ export class AccountImportService {
       }
       const strict = this.deps.validateToken(token);
       if (strict.valid) {
-        return { ok: true, token, rt, metadata };
+        return {
+          ok: true,
+          token,
+          rt,
+          idToken: entry.idToken?.trim() || null,
+          lastRefresh: null,
+          metadata,
+        };
       }
 
       // Do not rely on a mutable error string. A token that passes the
@@ -289,7 +295,14 @@ export class AccountImportService {
           kind: "validation",
         };
       }
-      return { ok: true, token, rt, metadata };
+      return {
+        ok: true,
+        token,
+        rt,
+        idToken: entry.idToken?.trim() || null,
+        lastRefresh: null,
+        metadata,
+      };
     }
 
     if (!rt) {
@@ -307,6 +320,8 @@ export class AccountImportService {
         ok: true,
         token: existing.token,
         rt: existing.refreshToken,
+        idToken: existing.idToken ?? null,
+        lastRefresh: existing.lastRefresh ?? null,
         metadata: {
           accountId: existing.accountId,
           organizationId: existing.organizationId ?? null,
@@ -364,6 +379,8 @@ export class AccountImportService {
         ok: true,
         token: accessToken,
         rt: newRT,
+        idToken: tokens.id_token ?? null,
+        lastRefresh: new Date().toISOString(),
         metadata,
       };
     } catch (err) {
@@ -375,5 +392,28 @@ export class AccountImportService {
     } finally {
       this.refreshingRTs.delete(rt);
     }
+  }
+
+  private addResolvedAccount(resolved: {
+    token: string;
+    rt: string | null;
+    idToken: string | null;
+    lastRefresh: string | null;
+    metadata: CodexTokenMetadata;
+  }): string {
+    // Keep compatibility with older embedders/test doubles that expose only
+    // addAccount; the production pool retains the complete OAuth credential set.
+    if (typeof this.pool.addOAuthAccount === "function") {
+      return this.pool.addOAuthAccount(
+        {
+          accessToken: resolved.token,
+          refreshToken: resolved.rt,
+          idToken: resolved.idToken,
+          lastRefresh: resolved.lastRefresh,
+        },
+        resolved.metadata,
+      );
+    }
+    return this.pool.addAccount(resolved.token, resolved.rt, resolved.metadata);
   }
 }

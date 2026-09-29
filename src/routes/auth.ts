@@ -99,7 +99,12 @@ export function createAuthRoutes(
 
     try {
       const tokens = await exchangeCode(code, session.codeVerifier, session.redirectUri);
-      const entryId = pool.addAccount(tokens.access_token, tokens.refresh_token);
+      const entryId = pool.addOAuthAccount({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        idToken: tokens.id_token,
+        lastRefresh: new Date().toISOString(),
+      });
       scheduler.scheduleOne(entryId, tokens.access_token);
       deleteSession(state);
       markSessionCompleted(state);
@@ -144,7 +149,12 @@ export function createAuthRoutes(
 
     try {
       const tokens = await exchangeCode(code, session.codeVerifier, session.redirectUri);
-      const entryId = pool.addAccount(tokens.access_token, tokens.refresh_token);
+      const entryId = pool.addOAuthAccount({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        idToken: tokens.id_token,
+        lastRefresh: new Date().toISOString(),
+      });
       scheduler.scheduleOne(entryId, tokens.access_token);
       deleteSession(state);
       markSessionCompleted(state);
@@ -191,7 +201,12 @@ export function createAuthRoutes(
 
     try {
       const tokens = await pollDeviceToken(deviceCode);
-      const entryId = pool.addAccount(tokens.access_token, tokens.refresh_token);
+      const entryId = pool.addOAuthAccount({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        idToken: tokens.id_token,
+        lastRefresh: new Date().toISOString(),
+      });
       scheduler.scheduleOne(entryId, tokens.access_token);
 
       console.log(`[Auth] Device code flow completed — account ${entryId} added`);
@@ -213,7 +228,12 @@ export function createAuthRoutes(
   app.post("/auth/import-cli", async (c) => {
     try {
       const cliAuth = importCliAuth();
-      const entryId = pool.addAccount(cliAuth.access_token!, cliAuth.refresh_token);
+      const entryId = pool.addOAuthAccount({
+        accessToken: cliAuth.access_token!,
+        refreshToken: cliAuth.refresh_token,
+        idToken: cliAuth.id_token,
+        lastRefresh: new Date().toISOString(),
+      });
       scheduler.scheduleOne(entryId, cliAuth.access_token!);
 
       console.log(`[Auth] CLI token imported — account ${entryId} added`);
