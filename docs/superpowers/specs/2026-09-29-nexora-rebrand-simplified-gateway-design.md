@@ -1,7 +1,7 @@
 # NEXORA Rebrand and Simplified Account Gateway Design
 
 Date: 2026-09-29
-Status: Proposed
+Status: Approved
 
 ## Summary
 
@@ -126,6 +126,12 @@ NEXORA uses a focused desktop-control-plane aesthetic rather than a generic
 admin dashboard. The visual hierarchy prioritizes the current gateway account
 and connection readiness.
 
+The reference direction is the Codex Desktop application's deep, focused
+workspace aesthetic. NEXORA adopts the structural qualities that fit a local
+gateway—persistent navigation, layered dark surfaces, compact toolbars, quiet
+typography, and a large uncluttered work area—without copying OpenAI artwork,
+logos, proprietary assets, exact layouts, or trade dress.
+
 - Dark graphite and near-white neutral surfaces with one electric cyan/indigo
   accent family.
 - Flat, restrained cards; borders provide structure and shadows are minimal.
@@ -137,6 +143,18 @@ and connection readiness.
 - Tables collapse into readable cards on narrow windows.
 - Empty and failure states include a direct recovery action.
 - Light and dark themes share the same information hierarchy and contrast.
+
+The desktop shell uses a three-zone composition:
+
+1. A narrow persistent sidebar for Overview, Accounts, API Access, Activity,
+   Settings, and About.
+2. A restrained page toolbar for page identity and contextual actions.
+3. A scrollable primary workspace with one prominent operational card and
+   secondary details below it.
+
+Dark mode is the signature presentation and uses opaque surfaces on Windows to
+avoid transparency and composition problems. Light mode remains fully
+supported but is not allowed to introduce a different information structure.
 
 The app icon and brand mark will be replaced with an original NEXORA asset.
 No upstream logo or maintainer identity will remain in user-facing branding.
