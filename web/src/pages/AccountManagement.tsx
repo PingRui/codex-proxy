@@ -51,6 +51,7 @@ export function AccountManagement({ accounts, onAddAccount }: AccountManagementP
         onToggleStatus={accounts.toggleStatus}
         onUpdateLabel={accounts.updateLabel}
         onUpdateCodexFingerprintMode={accounts.updateCodexFingerprintMode}
+        manualMode={accounts.manualMode}
         selectedAccountId={accounts.selectedAccountId}
         selectingAccountId={accounts.selectingAccountId}
         selectionNotice={accounts.selectionNotice}

@@ -33,6 +33,7 @@ interface AccountListProps {
   onUpdateFallbackUpstream?: (baseUrl: string, apiKey: string) => Promise<string | null>;
   onDeleteFallbackUpstream?: () => Promise<string | null>;
   fallbackActive?: boolean;
+  manualMode?: boolean;
   selectedAccountId?: string | null;
   selectingAccountId?: string | null;
   selectionNotice?: AccountSelectionResult | null;
@@ -51,7 +52,7 @@ function getBrowserStorage(): Storage | null {
   }
 }
 
-export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing, lastUpdated, proxies, onProxyChange, onExport, onImport, onBatchDelete, onBatchSetStatus, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, fallbackUpstream, onUpdateFallbackUpstream, onDeleteFallbackUpstream, fallbackActive = false, selectedAccountId = null, selectingAccountId = null, selectionNotice = null, onSelectAccount, onDismissSelectionNotice }: AccountListProps) {
+export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing, lastUpdated, proxies, onProxyChange, onExport, onImport, onBatchDelete, onBatchSetStatus, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, fallbackUpstream, onUpdateFallbackUpstream, onDeleteFallbackUpstream, fallbackActive = false, manualMode = false, selectedAccountId = null, selectingAccountId = null, selectionNotice = null, onSelectAccount, onDismissSelectionNotice }: AccountListProps) {
   const t = useT();
   const { lang } = useI18n();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -282,8 +283,9 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           onClick={onRefresh}
           disabled={refreshing}
           class={accountToolbarControlClass}
+          aria-label={t("refreshList")}
         >
-          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
           <span class="hidden sm:inline">{t("refreshList")}</span>
@@ -293,14 +295,16 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           onClick={runHealthCheck}
           disabled={healthChecking}
           class={accountToolbarControlClass}
+          aria-label={healthChecking ? t("healthChecking") : t("healthCheck")}
         >
-          <svg class={`size-3.5 ${healthChecking ? "animate-pulse" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg aria-hidden="true" class={`size-3.5 ${healthChecking ? "animate-pulse" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
           </svg>
           <span class="hidden sm:inline">{healthChecking ? t("healthChecking") : t("healthCheck")}</span>
         </button>
         {/* Status filter dropdown */}
         <select
+          aria-label={t("statusFilter")}
           value={statusFilter}
           onChange={(e) => setStatusFilter((e.target as HTMLSelectElement).value)}
           class={`${accountToolbarControlClass} cursor-pointer`}
@@ -378,7 +382,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
         )}
       </details>
       {/* Health check result banner */}
-      {selectionNotice && onDismissSelectionNotice && (
+      {manualMode && selectionNotice && onDismissSelectionNotice && (
         <AccountSelectionNotice
           result={selectionNotice}
           onDismiss={onDismissSelectionNotice}
@@ -442,7 +446,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </div>
         ) : (
           displayAccounts.slice(0, visibleCount).map((acct, i) => (
-            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={maintenanceOpen && selectedIds.has(acct.id)} onToggleSelect={maintenanceOpen ? toggleSelect : undefined} currentAccount={selectedAccountId === acct.id} selectingAccount={selectingAccountId === acct.id} onSelectAccount={onSelectAccount} onRefreshQuota={async (id) => {
+            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={maintenanceOpen && selectedIds.has(acct.id)} onToggleSelect={maintenanceOpen ? toggleSelect : undefined} currentAccount={manualMode && selectedAccountId === acct.id} selectingAccount={manualMode && selectingAccountId === acct.id} selectionBusy={manualMode && selectingAccountId !== null} onSelectAccount={manualMode ? onSelectAccount : undefined} onRefreshQuota={async (id) => {
               const encoded = encodeURIComponent(id);
               const resp = await fetch(`/auth/accounts/${encoded}/quota`);
               if (!resp.ok) {

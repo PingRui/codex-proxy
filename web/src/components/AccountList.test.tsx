@@ -142,4 +142,16 @@ describe("AccountList", () => {
     expect(getStorage().getItem(EXPAND_ALL_STORAGE_KEY)).toBe("true");
     expect(screen.getByText("collapse")).toBeTruthy();
   });
+
+  it("names compact refresh, health, and status controls", () => {
+    renderAccountList([makeAccount("active-1", "active")]);
+
+    const refresh = screen.getByRole("button", { name: "refreshList" });
+    const health = screen.getByRole("button", { name: "healthCheck" });
+    expect(refresh.getAttribute("aria-label")).toBe("refreshList");
+    expect(health.getAttribute("aria-label")).toBe("healthCheck");
+    expect(refresh.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(health.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByRole("combobox", { name: "statusFilter" })).toBeTruthy();
+  });
 });

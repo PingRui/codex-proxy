@@ -19,7 +19,10 @@ function account(id: string): Account {
   };
 }
 
-function accountsHook(selectionNotice: AccountsHook["selectionNotice"] = null) {
+function accountsHook(
+  selectionNotice: AccountsHook["selectionNotice"] = null,
+  overrides: Partial<AccountsHook> = {},
+) {
   const selectAccount = vi.fn(async (id: string) => ({
     selectedAccountId: id,
     proxySelected: true,
@@ -33,6 +36,7 @@ function accountsHook(selectionNotice: AccountsHook["selectionNotice"] = null) {
     refreshing: false,
     lastUpdated: null,
     selectedAccountId: "account-a",
+    manualMode: true,
     selectingAccountId: null,
     selectionNotice,
     persistenceHealth: { ok: true },
@@ -47,6 +51,7 @@ function accountsHook(selectionNotice: AccountsHook["selectionNotice"] = null) {
     updateCodexFingerprintMode: vi.fn(async () => null),
     selectAccount,
     dismissSelectionNotice: vi.fn(),
+    ...overrides,
   } as unknown as AccountsHook;
   return { accounts, selectAccount };
 }
@@ -91,6 +96,43 @@ describe("Accounts gateway source workflow", () => {
     );
 
     expect(screen.getByText("Gateway account switched. Codex Desktop sync failed: Permission denied")).toBeTruthy();
+  });
+
+  it("does not present manual gateway controls in automatic routing mode", () => {
+    const { accounts } = accountsHook({
+      selectedAccountId: "account-b",
+      proxySelected: true,
+      codexSynced: true,
+      restartCodexRequired: true,
+      codexAuthPath: "C:\\Users\\test\\.codex\\auth.json",
+    }, { manualMode: false });
+    render(
+      <I18nProvider>
+        <AccountManagement accounts={accounts} onAddAccount={vi.fn()} />
+      </I18nProvider>,
+    );
+
+    expect(screen.queryByText("Current gateway account")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Use as gateway account" })).toBeNull();
+    expect(screen.queryByText(/Gateway account switched/)).toBeNull();
+  });
+
+  it("disables every account selection while one selection is pending", () => {
+    const { accounts, selectAccount } = accountsHook(null, {
+      list: [account("account-a"), account("account-b"), account("account-c")],
+      selectingAccountId: "account-b",
+    });
+    render(
+      <I18nProvider>
+        <AccountManagement accounts={accounts} onAddAccount={vi.fn()} />
+      </I18nProvider>,
+    );
+
+    expect((screen.getByRole("button", { name: "Switching..." }) as HTMLButtonElement).disabled).toBe(true);
+    const otherSelection = screen.getByRole("button", { name: "Use as gateway account" }) as HTMLButtonElement;
+    expect(otherSelection.disabled).toBe(true);
+    fireEvent.click(otherSelection);
+    expect(selectAccount).not.toHaveBeenCalled();
   });
 
   it("updates every consumer immediately through the shared accounts state", async () => {

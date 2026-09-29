@@ -19,12 +19,15 @@ function AccountFingerprintHarness() {
 function AccountSelectionHarness() {
   const accounts = useAccounts();
   return (
-    <button
-      type="button"
-      onClick={() => void accounts.selectAccount("account/2")}
-    >
-      select
-    </button>
+    <>
+      <output aria-label="selected account">{accounts.selectedAccountId ?? "none"}</output>
+      <button
+        type="button"
+        onClick={() => void accounts.selectAccount("account/2")}
+      >
+        select
+      </button>
+    </>
   );
 }
 
@@ -131,6 +134,7 @@ describe("useAccounts manual selection", () => {
         "/auth/accounts/account%2F2/select",
         { method: "POST" },
       );
+      expect(screen.getByLabelText("selected account").textContent).toBe("account/2");
     });
   });
 

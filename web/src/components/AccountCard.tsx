@@ -97,10 +97,11 @@ interface AccountCardProps {
   onConsumeResetCredit?: (id: string) => Promise<string | null>;
   currentAccount?: boolean;
   selectingAccount?: boolean;
+  selectionBusy?: boolean;
   onSelectAccount?: (id: string) => Promise<unknown>;
 }
 
-export function AccountCard({ account, index, onDelete, proxies, onProxyChange, selected, onToggleSelect, onRefreshQuota, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, onConsumeResetCredit, currentAccount = false, selectingAccount = false, onSelectAccount }: AccountCardProps) {
+export function AccountCard({ account, index, onDelete, proxies, onProxyChange, selected, onToggleSelect, onRefreshQuota, onToggleStatus, onUpdateLabel, onUpdateCodexFingerprintMode, onConsumeResetCredit, currentAccount = false, selectingAccount = false, selectionBusy = false, onSelectAccount }: AccountCardProps) {
   const t = useT();
   const { lang } = useI18n();
   const email = account.email || "Unknown";
@@ -124,6 +125,8 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
 
   const effectiveStatus = derivedStatus(account);
   const [statusCls, statusKey] = statusStyles[effectiveStatus] || statusStyles.disabled;
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const selectionPending = selectionBusy || selectingAccount;
 
   const handleDelete = useCallback(async () => {
     if (!confirm(t("removeConfirm"))) return;
@@ -132,13 +135,15 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
   }, [account.id, onDelete, t]);
 
   const handleSelectAccount = useCallback(async () => {
-    if (!onSelectAccount || currentAccount || selectingAccount) return;
+    if (!onSelectAccount || currentAccount || selectionPending || effectiveStatus !== "active") return;
+    setSelectionError(null);
     try {
       await onSelectAccount(account.id);
     } catch (error) {
-      alert(error instanceof Error ? error.message : String(error));
+      const detail = error instanceof Error ? error.message : String(error);
+      setSelectionError(`${t("switchAccount")}: ${detail}`);
     }
-  }, [account.id, currentAccount, onSelectAccount, selectingAccount]);
+  }, [account.id, currentAccount, effectiveStatus, onSelectAccount, selectionPending, t]);
 
   // Quota — primary window (default 0% used = 100% available for accounts without data)
   const q = account.quota;
@@ -386,6 +391,7 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
               onClick={handleStatusToggle}
               disabled={!canToggle || statusToggling}
               title={canToggle ? (isEnabled ? t("disableAccount") : t("enableAccount")) : undefined}
+              aria-label={isEnabled ? t("disableAccount") : t("enableAccount")}
               class={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
                 !canToggle ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
               } ${isEnabled ? "bg-primary-action" : "bg-slate-300 dark:bg-slate-600"}`}
@@ -406,8 +412,9 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
               disabled={quotaRefreshing}
               class="p-1.5 text-slate-400 dark:text-text-dim hover:text-amber-500 transition-colors rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-40"
               title={t("refreshQuota")}
+              aria-label={t("refreshQuota")}
             >
-              <svg class="size-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <svg aria-hidden="true" class="size-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
             </button>
@@ -416,8 +423,9 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
             onClick={handleDelete}
             class="p-1.5 text-slate-400 dark:text-text-dim hover:text-red-500 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
             title={t("deleteAccount")}
+            aria-label={t("deleteAccount")}
           >
-            <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg aria-hidden="true" class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
             </svg>
           </button>
@@ -428,11 +436,17 @@ export function AccountCard({ account, index, onDelete, proxies, onProxyChange, 
         <button
           type="button"
           onClick={handleSelectAccount}
-          disabled={account.status !== "active" || selectingAccount}
+          disabled={effectiveStatus !== "active" || selectionPending}
           class="mb-4 flex h-10 w-full items-center justify-center bg-accent-strong px-4 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
         >
           {selectingAccount ? t("switchingAccount") : t("useAsGatewayAccount")}
         </button>
+      )}
+
+      {selectionError && (
+        <div role="alert" class="mb-4 border border-danger/30 bg-danger-container px-3 py-2 text-xs text-danger">
+          {selectionError}
+        </div>
       )}
 
       {/* Stats */}

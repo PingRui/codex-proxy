@@ -124,6 +124,62 @@ describe("AccountCard manual selection", () => {
     expect(screen.getByText("currentGatewayAccount")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "useAsGatewayAccount" })).toBeNull();
   });
+
+  it("does not allow a quota-exhausted active account to be selected", () => {
+    const selectAccount = vi.fn(async () => undefined);
+    render(
+      <AccountCard
+        account={{
+          ...account(),
+          quota: { rate_limit: { used_percent: 100, limit_reached: true } },
+        }}
+        index={0}
+        onDelete={vi.fn(async () => null)}
+        onSelectAccount={selectAccount}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: "useAsGatewayAccount" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(selectAccount).not.toHaveBeenCalled();
+  });
+
+  it("renders selection failures in context instead of opening a blocking alert", async () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    render(
+      <AccountCard
+        account={account()}
+        index={0}
+        onDelete={vi.fn(async () => null)}
+        onSelectAccount={vi.fn(async () => {
+          throw new Error("Account unavailable");
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "useAsGatewayAccount" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("switchAccount: Account unavailable");
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it("names compact account status and quota controls", () => {
+    render(
+      <AccountCard
+        account={account()}
+        index={0}
+        onDelete={vi.fn(async () => null)}
+        onToggleStatus={vi.fn(async () => null)}
+        onRefreshQuota={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "disableAccount" }).getAttribute("aria-label")).toBe("disableAccount");
+    const quota = screen.getByRole("button", { name: "refreshQuota" });
+    expect(quota.getAttribute("aria-label")).toBe("refreshQuota");
+    expect(quota.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  });
 });
 
 describe("AccountCard Rate Limit Reset Credits", () => {
