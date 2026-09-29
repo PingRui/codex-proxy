@@ -21,6 +21,10 @@ import type { ImportEntry } from "../services/account-import.js";
 import { discoverCodexAccountIdentity } from "../services/account-identity-resolver.js";
 import { AccountQueryService } from "../services/account-query.js";
 import { AccountMutationService } from "../services/account-mutation.js";
+import {
+  AccountSelectionError,
+  AccountSelectionService,
+} from "../services/account-selection.js";
 import { FallbackUpstreamStore } from "../auth/fallback-upstream.js";
 import { getFallbackActivity } from "../auth/fallback-state.js";
 import { getProxyUrl as getRuntimeProxyUrl } from "../tls/proxy.js";
@@ -83,6 +87,7 @@ export function createAccountRoutes(pool: AccountPool, scheduler: RefreshSchedul
     clearCookies: cookieJar ? (id) => cookieJar.clear(id) : undefined,
     clearWarnings,
   });
+  const selectionSvc = new AccountSelectionService(pool);
 
   app.get("/auth/accounts/login", (c) => {
     const config = getConfig();
@@ -154,6 +159,30 @@ export function createAccountRoutes(pool: AccountPool, scheduler: RefreshSchedul
 
   // ── Per-account routes ─────────────────────────────────────────
 
+  app.post("/auth/accounts/:id/select", (c) => {
+    try {
+      const result = selectionSvc.select(c.req.param("id"));
+      return c.json({
+        selected_account_id: result.selectedAccountId,
+        proxy_selected: result.proxySelected,
+        codex_synced: result.codexSynced,
+        restart_codex_required: result.restartCodexRequired,
+        codex_auth_path: result.codexAuthPath,
+        warning: result.warning,
+      });
+    } catch (error) {
+      if (!(error instanceof AccountSelectionError)) throw error;
+      c.status(
+        error.reason === "not_found"
+          ? 404
+          : error.reason === "persistence_unavailable"
+            ? 503
+            : 409,
+      );
+      return c.json({ error: error.message, reason: error.reason });
+    }
+  });
+
   app.post("/auth/accounts/:id/refresh", async (c) => {
     const id = c.req.param("id");
     const result = await probeAccount(pool, scheduler, id, proxyPool);
@@ -187,6 +216,9 @@ export function createAccountRoutes(pool: AccountPool, scheduler: RefreshSchedul
     const accounts = querySvc.listFresh();
     return c.json({
       accounts,
+      selected_account_id: pool.getSelectedAccountId(),
+      manual_mode: pool.isManualRouting(),
+      codex_auth_path: selectionSvc.getCodexAuthPath(),
       persistence_health: pool.getPersistenceHealth(),
       fallback_upstream: fallbackUpstream?.getPublic() ?? null,
     });

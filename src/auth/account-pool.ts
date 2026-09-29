@@ -36,6 +36,7 @@ export class AccountPool {
   private lifecycle: AccountLifecycle;
   private persistenceHealth: PersistenceLoadHealth | null = null;
   private _onExpired?: (entryId: string) => void;
+  private routingMode: RoutingMode;
 
   constructor(options?: {
     persistence?: AccountPersistence;
@@ -72,10 +73,11 @@ export class AccountPool {
       persistDisabled: loaded.loadFailed === true,
       selectedAccountId: loaded.selectedAccountId ?? null,
     });
+    this.routingMode = options?.routingMode ?? "automatic";
     this.lifecycle = new AccountLifecycle(
       this.registry,
       strategyName,
-      options?.routingMode ?? "automatic",
+      this.routingMode,
     );
 
     // Override with initial token if set
@@ -157,6 +159,10 @@ export class AccountPool {
 
   getSelectedAccountId(): string | null {
     return this.registry.getSelectedAccountId();
+  }
+
+  isManualRouting(): boolean {
+    return this.routingMode === "manual";
   }
 
   selectAccount(entryId: string): boolean {
