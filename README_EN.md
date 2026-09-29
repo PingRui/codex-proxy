@@ -1,937 +1,103 @@
-<div align="center">
+# NEXORA
 
-  <h1>Codex Proxy</h1>
-  <h3>Your Local Codex Coding Assistant Gateway</h3>
-  <p>Expose Codex Desktop's capabilities as standard OpenAI / Anthropic / Gemini APIs, seamlessly connecting any AI client.</p>
+**Multi-Account AI Gateway**
 
-  <p>
-    <img src="https://img.shields.io/badge/Runtime-Node.js_18+-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
-    <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
-    <img src="https://img.shields.io/badge/Framework-Hono-E36002?style=flat-square" alt="Hono">
-    <img src="https://img.shields.io/badge/Docker-Supported-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker">
-    <img src="https://img.shields.io/badge/Desktop-Win%20%7C%20Mac%20%7C%20Linux-8A2BE2?style=flat-square&logo=electron&logoColor=white" alt="Desktop">
-    <img src="https://img.shields.io/badge/License-Non--Commercial-red?style=flat-square" alt="License">
-  </p>
+NEXORA authorizes and manages multiple subscription accounts, lets you explicitly choose one as the active gateway source, and exposes that account through a local OpenAI-compatible API.
 
-  <p>
-    <a href="#-quick-start">Quick Start</a> &bull;
-    <a href="#-features">Features</a> &bull;
-    <a href="#-available-models">Models</a> &bull;
-    <a href="#-client-setup">Client Setup</a> &bull;
-    <a href="#-configuration">Configuration</a> &bull;
-    <a href="./API.md">API Reference</a> &bull;
-    <a href="#-acknowledgements">Acknowledgements</a>
-  </p>
+> NEXORA is an independently maintained modified distribution. It is not an official OpenAI or Codex product and is not endorsed or sponsored by OpenAI.
 
-  <p>
-    <a href="./README.md">简体中文</a> |
-    <a href="./README_TW.md">繁體中文 (台灣)</a> |
-    <a href="./README_HK.md">繁體中文 (香港)</a> |
-    <strong>English</strong> |
-    <a href="./README_JA.md">日本語</a>
-  </p>
+[简体中文](./README.md) · [繁體中文（台灣）](./README_TW.md) · [繁體中文（香港）](./README_HK.md) · [日本語](./README_JA.md)
 
-  <br>
+![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows&logoColor=white)
+![Licence](https://img.shields.io/badge/Licence-Non--Commercial-red?style=flat-square)
 
-  <a href="https://x.com/IceBearMiner"><img src="https://img.shields.io/badge/Follow-@IceBearMiner-000?style=flat-square&logo=x&logoColor=white" alt="X"></a>
-  <a href="https://github.com/icebear0828/codex-proxy/issues"><img src="https://img.shields.io/github/issues/icebear0828/codex-proxy?style=flat-square" alt="Issues"></a>
-  <a href="#-donate"><img src="https://img.shields.io/badge/Donate-WeChat-07C160?style=flat-square&logo=wechat&logoColor=white" alt="Donate"></a>
+## Primary workflow
 
-</div>
+1. Add an account in NEXORA and create an authorization URL.
+2. Copy the URL into the browser profile for that account and complete authorization. NEXORA never opens the browser automatically.
+3. Select **Use as gateway account** on the saved account.
+4. Copy the Base URL and API key from Overview into an OpenAI-compatible client.
+5. New requests immediately use the selected account; NEXORA does not need to restart.
 
----
+Desktop mode uses exactly one explicitly selected account. It does not automatically rotate, fail over, or silently switch accounts. Reauthorize an expired account or manually select another one when action is required.
 
-> **Disclaimer**: This project is independently developed and maintained by a single person — built to scratch my own itch. I have my own account pipeline and am not short on tokens; this project exists because I needed it, not to freeload off anyone.
->
-> I open-source and maintain this voluntarily. Features get added when I need them; bugs get fixed as soon as I find them. But I am under no obligation to serve any individual user's demands.
->
-> Think the code is garbage? Don't use it. Think you can do better? Open a PR and join as a contributor. The issue tracker is for bug reports and suggestions — not feature demands, update nagging, or unsolicited code reviews.
+## Windows installation
 
----
+Download `NEXORA-x.x.x-win-x64.exe` from [Releases](https://github.com/PingRui/codex-proxy/releases). NEXORA stores account data per Windows user and listens on `127.0.0.1` by default. See the [Windows desktop guide](./docs/windows-desktop-manual-accounts.md) for the complete flow.
 
-**Codex Proxy** is a lightweight local gateway that translates the [Codex Desktop](https://openai.com/codex) Responses API into multiple standard protocol endpoints — OpenAI `/v1/chat/completions`, Anthropic `/v1/messages`, Gemini, Codex `/v1/responses` passthrough, and an optional Ollama-compatible `/api/chat` bridge. Use Codex coding models directly in Cursor, Claude Code, Continue, Pi, or any compatible client.
+## API access
 
-Just a ChatGPT account (or a third-party API key provider) and this proxy — your own personal AI coding assistant gateway, running locally.
+The default Base URL is `http://127.0.0.1:8080/v1`. Use the actual port and API key shown in NEXORA. If the default port is occupied, the desktop app selects an available local port.
 
-## 🚀 Quick Start
-
-### Desktop App (Easiest)
-
-Download the installer from [GitHub Releases](https://github.com/icebear0828/codex-proxy/releases):
-
-| Platform | Installer |
-|----------|-----------|
-| Windows | `Codex Proxy Setup x.x.x.exe` |
-| macOS | `Codex Proxy-x.x.x.dmg` |
-| Linux | `Codex Proxy-x.x.x.AppImage` |
-
-Open the app, log in with your ChatGPT account. Dashboard at `http://localhost:8080`.
-
-### No-Node Lite (Browser/Server, for advanced users)
-
-If you already have Node.js installed, or need to run Codex Proxy on a server, WSL, or another machine without a desktop, use the optional No-Node Lite distribution. It uses the same backend and dashboard as the Electron app but does not bundle Node.js, so the archive is smaller and the runtime remains under your control. The Electron installers above are unchanged. Download `codex-proxy-<version>-no-node-lite-all-platforms.zip`, extract it, and run the platform entry point from the package root:
+| Capability | Endpoint |
+| --- | --- |
+| OpenAI Chat Completions | `POST /v1/chat/completions` |
+| OpenAI Responses | `POST /v1/responses` |
+| Image generation | `POST /v1/images/generations` |
+| Anthropic Messages | `POST /v1/messages` |
+| Gemini compatibility | `/v1beta/models/*` |
+| Model list | `GET /v1/models` |
 
 ```bash
-# Windows: double-click codex-proxy.exe; codex-proxy.cmd is always included as a script fallback
-# macOS/Linux:
-./codex-proxy.sh
+curl http://127.0.0.1:8080/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_LOCAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-5.6-sol","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-Node.js 20 or newer is required. By default the Windows launcher checks for the packaged WebView2 host and an installed WebView2 Runtime. If WebView2 is unavailable, it starts the local server and opens the actual bound server URL in the system browser. Use `--mode=server` to start only the server, `--mode=browser` to force the browser, or `--mode=webview2` to require WebView2. When the WebView2 Runtime is missing, `--mode=webview2` asks first and then downloads and runs Microsoft's official online installer (~2 MB, Authenticode-verified); a timeout or refusal exits. The URL is derived from the bound port rather than hard-coded. Windows portable releases provide x86/x64 WebView2 hosts. If Node.js cannot be started, the launchers show installation guidance instead of downloading or bundling Node.js.
-
-Like the Electron app, Lite uses the normal per-user data directory by default. Pass `--portable` (or `-p`) to keep data under the extracted package directory instead. `--host`, `--port`, `--webview2-host`, and `--node-path` also have the short forms `-H`, `-P`, `-w`, and `-n`. The Lite update action opens the latest Releases page rather than replacing the running package automatically. On macOS/Linux and in Git Bash, the shell launcher defaults to browser mode; use `--mode=auto` only when you want environment-based selection.
-
-Linux x64 Lite includes both glibc and musl TLS native addons, so it can be used on common Linux distributions and Alpine Linux. Other native architectures, including Linux ARM, are not currently included.
-
-### Docker
-
-The simplest way — one command:
+Image generation:
 
 ```bash
-docker run -d --name codex-proxy --restart unless-stopped \
-  -p 127.0.0.1:8080:8080 \
-  -v codex-proxy-data:/app/data \
-  -v codex-proxy-config:/app/config \
-  ghcr.io/icebear0828/codex-proxy:latest-lite
-# Open http://localhost:8080 to log in
+curl http://127.0.0.1:8080/v1/images/generations \
+  -H "Authorization: Bearer YOUR_LOCAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-image-2","prompt":"A quiet futuristic library at sunrise","size":"1024x1024"}'
 ```
 
-> This image is based on Alpine Linux + Node.js and contains only the application itself, the web UI and the native components needed at runtime — build toolchains, dependency caches and other build-time-only content are removed. **It is feature-complete**: the web dashboard, account management, the Ollama bridge and everything else work the same. Currently linux/amd64. It pulls ~57 MB compressed (the alternative Debian-based image is ~722 MB) and idles at ~40 MB RAM. On first start it seeds default config into the `codex-proxy-config` volume; your accounts live in the `codex-proxy-data` volume and survive image updates. To allow LAN access, use `-p 8080:8080`.
+Image generation uses the selected subscription account, which must have access to that capability. See [API.md](./API.md) for protocol and client details.
 
-Already using `docker-compose.yml` (which defaults to the Debian-based `:latest` image, with the toolchain handy for in-container debugging or building from source)? No migration needed — the two images share the same layout and `./data` / `./config` volumes; just change `image` to `ghcr.io/icebear0828/codex-proxy:latest-lite`.
+## Codex Desktop synchronization
 
-For environment variables, auto-updates and more options, use the compose setup:
+Selecting a gateway account also asks NEXORA to write that account to Codex Desktop's `auth.json`; the previous file is backed up as `auth.json.bak`. The local gateway switch is immediate. Exit and restart Codex Desktop manually when you want it to load the new login state. NEXORA never controls the Codex Desktop process.
 
-```bash
-mkdir codex-proxy && cd codex-proxy
-curl -O https://raw.githubusercontent.com/icebear0828/codex-proxy/master/docker-compose.yml
-curl -O https://raw.githubusercontent.com/icebear0828/codex-proxy/master/.env.example
-cp .env.example .env
-docker compose up -d
-# Open http://localhost:8080 to log in
-```
+## Run from source and package
 
-> Data persists in `data/`. Cross-container access: use host LAN IP (e.g. `192.168.x.x:8080`), not `localhost`. Uncomment Watchtower in `docker-compose.yml` for auto-updates. To enable the Ollama-compatible bridge in Docker, see [Ollama Bridge configuration](#ollama-bridge-configuration).
-
-> **Memory settings**: `docker-compose.yml` defaults to `MEM_LIMIT=768m` and `NODE_OPTIONS=--max-old-space-size=512`. Set both variables in `.env` to override the defaults for your machine. Without these settings, Node/V8 sizes its default heap off the *host's* total memory rather than what this container should actually use — on a memory-constrained or shared host that can let RSS climb unchecked (GC stays too lenient) and, in the worst case, take the whole host down. Tune both to your machine: leave `mem_limit` enough headroom for everything else running there, and keep `--max-old-space-size` comfortably below `mem_limit` (the process's RSS is more than just the V8 heap).
-
-### From Source
-
-```bash
-git clone https://github.com/icebear0828/codex-proxy.git
+```powershell
+git clone https://github.com/PingRui/codex-proxy.git
 cd codex-proxy
-npm install                        # Backend dependencies
-cd web && npm install && cd ..     # Frontend dependencies
-npm run dev                        # Dev mode (hot reload)
-# Or: npm run build && npm start   # Production mode
+npm ci
+npm run build
+npm start
 ```
 
-> **Requires Rust toolchain** (for TLS native addon):
-> ```bash
-> curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-> cd native && npm install && npm run build && cd ..
-> ```
-> Docker / desktop app ship pre-built addons — no manual compilation needed.
+```powershell
+npm --prefix packages/electron run build
+npm --prefix packages/electron run pack:win
+```
 
-### Verify
+Artifacts are written to `packages/electron/release/`. Without a production signing certificate, Windows SmartScreen may show an unknown-publisher warning.
 
-After logging in, open the dashboard at `http://localhost:8080` and find your API Key in the **API Configuration** section:
+## Docker (build from source)
+
+The documentation does not assume that a container image exists under the new repository owner.
 
 ```bash
-# Replace your-api-key with the key shown in the dashboard
-curl http://localhost:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d '{"model":"gpt-5.6-sol","messages":[{"role":"user","content":"Hello!"}],"stream":true}'
+git clone https://github.com/PingRui/codex-proxy.git
+cd codex-proxy
+cp .env.example .env
+docker compose up -d --build
 ```
 
-If you see streaming AI text, the setup is working. If you get 401, double-check the API Key.
+The Compose file binds the main service and OAuth callback to host loopback by default.
 
-## 🌟 Features
+## Security and licence
 
-### 1. 🔌 Full Protocol Compatibility
-- Compatible with `/v1/chat/completions` (OpenAI), `/v1/messages` (Anthropic), Gemini, and `/v1/responses` (Codex passthrough)
-- Optional built-in Ollama-compatible bridge, defaulting to `http://127.0.0.1:11434`
-- SSE streaming, works with all OpenAI / Anthropic SDKs and clients
-- Automatic bidirectional translation between all protocols and Codex Responses API
-- **Structured Outputs** — `response_format` (`json_object` / `json_schema`) and Gemini `responseMimeType`
-- **Function Calling** — native `function_call` / `tool_calls` across all protocols
-- **WebSocket interface** — `/v1/responses` supports client WebSocket streaming (Bearer auth), with HTTP POST + SSE kept as fallback
-- **Third-party API keys** — supports multiple protocols, routed by model
-- 📖 For complete endpoint definitions and protocol specifications, see **[API Reference](./API.md)**.
+- Never upload or commit account tokens, `auth.json`, `auth.json.bak`, `data/`, or runtime logs.
+- Do not expose the local API to the public Internet without adding your own authentication and TLS boundary.
+- You are responsible for complying with applicable law and the terms of every account, API, model, and service you use.
 
-### 2. 🔐 Account Management & Smart Rotation
-- **OAuth PKCE login** — one-click browser auth
-- **Multi-account rotation** — `least_used`, `round_robin`, and `sticky` strategies
-- **Plan Routing** — accounts on different plans (free/plus/team/business) auto-route to their supported models
-- **Auto token refresh** — JWT renewed before expiry with exponential backoff
-- **Passive quota collection** — updates account quota from upstream response headers and WebSocket rate-limit events; `quota.refresh_interval_minutes` only controls local usage snapshots, and `0` disables that timer.
-- **Ban detection** — upstream 403 auto-marks banned; 401 token invalidation auto-expires and switches account
-- **API key provider pool** — manage third-party API keys, model lists, import/export, and enable/disable state from the dashboard.
-- **Web dashboard** — account management, usage stats, batch operations; dashboard login gate for remote access
-- **Fallback upstream** — when every account is exhausted, an editable last-resort API Key is used automatically
-- **Fallback status indicator** — logs and the home page clearly show which account served each request, and when fallback kicked in
+Source, issues, and releases are available from the [GitHub repository](https://github.com/PingRui/codex-proxy), [Issues](https://github.com/PingRui/codex-proxy/issues), and [Releases](https://github.com/PingRui/codex-proxy/releases). Also see the [modified-distribution notice](./NOTICE.md) and [third-party notices](./THIRD_PARTY_NOTICES.md).
 
-### 3. 🌐 Proxy Pool
-- **Per-account proxy routing** — different upstream proxies per account
-- **Four assignment modes** — Global Default / Direct / Auto / Specific proxy
-- **Health checks** — scheduled + manual, reports exit IP and latency
-- **Auto-mark unreachable** — unreachable proxies excluded from rotation
-
-### 4. 🛡️ Anti-Detection & Protocol Impersonation
-- **Rust Native TLS** — built-in reqwest + rustls native addon, TLS fingerprint matches real Codex clients exactly, across Windows / macOS / Linux (incl. Alpine)
-- **Client Profile Presets** — support for `codex_cli` (default, official CLI clean terminal headers), `codex_desktop` (Desktop complete headers), `opencode`, `pi`, and `custom`; CLI mode cleanly strips browser-specific headers (`sec-ch-ua`, etc.)
-- **Per-Account Device ID Isolation** — independently derives and persists unique `x-codex-installation-id` for each account to prevent device correlation
-- **Full Request Header Emulation** — `originator`, `User-Agent`, `x-openai-internal-codex-residency`, `x-codex-turn-state`, `x-client-request-id` headers accurately sent per selected profile
-- **Cookie Persistence** — automatic Cloudflare cookie capture and replay
-- **Fingerprint Auto-Update** — polls Codex update feed, auto-syncs `app_version` and `build_number`
-
-## 🏗️ Architecture
-
-```
-                                Codex Proxy
-┌──────────────────────────────────────────────────────────┐
-│                                                          │
-│  Client (Cursor / Claude Code / Continue / SDK / ...)    │
-│       │                                                  │
-│  POST /v1/chat/completions (OpenAI)                      │
-│  POST /v1/messages         (Anthropic)                   │
-│  POST /v1/responses        (Codex passthrough)           │
-│  POST /gemini/*            (Gemini)                      │
-│       │                                                  │
-│       ▼                                                  │
-│  ┌──────────┐   ┌───────────────┐   ┌──────────────┐     │
-│  │  Routes  │──▶│  Translation  │──▶│    Proxy     │     │
-│  │  (Hono)  │   │ Multi→Codex   │   │ Native TLS   │     │
-│  └──────────┘   └───────────────┘   └──────┬───────┘     │
-│       ▲                                    │             │
-│       │          ┌───────────────┐         │             │
-│       └──────────│  Translation  │◀────────┘             │
-│                  │ Codex→Multi   │  SSE stream           │
-│                  └───────────────┘                       │
-│                                                          │
-│  ┌──────────┐  ┌───────────────┐  ┌──────────────────┐   │
-│  │   Auth   │  │  Fingerprint  │  │   Model Store    │   │
-│  │OAuth/API │  │ Rust (rustls) │  │ Static + Dynamic │   │
-│  │ API Keys │  │  Headers/UA   │  │  Plan Routing    │   │
-│  └──────────┘  └───────────────┘  └──────────────────┘   │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
-                          │
-              Rust Native Addon (napi-rs)
-            reqwest 0.12.28 + rustls 0.23.36
-           (TLS fingerprint = real Codex Desktop)
-                          │
-                   ┌──────┴──────┐
-                   ▼             ▼
-             chatgpt.com   3rd-party providers
-         /backend-api/codex  (3rd-party API)
-```
-
-## 📦 Available Models
-
-| Model ID | Reasoning | Current context | Max context | Max output | Output | Description |
-|----------|-----------|-----------------|-------------|------------|--------|-------------|
-| `gpt-6-astra` | low / medium / high / xhigh / max / ultra | 1,050,000 | 1,050,000 | 128,000 | text | GPT-6 frontier flagship for complex reasoning & coding (`gpt-6` is an alias) |
-| `gpt-6-astra-aeon` | low / medium / high / xhigh / max / ultra | 1,050,000 | 1,050,000 | 128,000 | text | GPT-6 variant for long-horizon multi-agent tasks & deep reasoning |
-| `gpt-reserve` | low / medium / high / xhigh / max | 272,000 | 872,000 | 128,000 | text | Fast and affordable agentic coding model (all plans) |
-| `gpt-5.6-sol` | low / medium / high / xhigh / max / ultra | 1,050,000 | 1,050,000 | 128,000 | text | GPT-5.6 flagship for complex reasoning & coding (default; `gpt-5.6` is an alias) |
-| `gpt-5.6-terra` | low / medium / high / xhigh / max / ultra | 1,050,000 | 1,050,000 | 128,000 | text | GPT-5.6 balanced intelligence and cost |
-| `gpt-5.6-luna` | low / medium / high / xhigh / max / ultra | 1,050,000 | 1,050,000 | 128,000 | text | GPT-5.6 cost-efficient / high-throughput |
-| `gpt-5.5` | low / medium / high / xhigh | 272,000 | 272,000 | 128,000 | text | Complex coding, research, and real-world work |
-| `gpt-5.4` | low / medium / high / xhigh | 272,000 | 1,000,000 | 128,000 | text | Strong model for everyday coding |
-| `gpt-5.4-mini` | low / medium / high / xhigh | 400,000 | — | 128,000 | text | GPT-5.4 lightweight model |
-| `gpt-5.3-codex` | low / medium / high / xhigh | 400,000 | — | 128,000 | text | GPT-5.3 coding-optimized model |
-| `gpt-5.2` | low / medium / high / xhigh | 400,000 | — | 128,000 | text | Professional work & long-running agents |
-| `gpt-5-codex` | low / medium / high | 400,000 | — | 128,000 | text | GPT-5 coding-optimized model |
-| `gpt-5-codex-mini` | medium / high | — | — | — | text | Lightweight Codex / CLI coding model |
-| `gpt-oss-120b` | low / medium / high | 131,072 | — | — | text | Open-source 120B model |
-| `gpt-oss-20b` | low / medium / high | 131,072 | — | — | text | Open-source 20B model |
-| `gpt-image-2` | — | — | — | — | image | Image-generation tool backend, invoked via `image_generation` |
-
-> **Suffixes**: Append `-fast` to any chat model for Fast mode, and `-high`/`-low`/`-max`/`-ultra` for reasoning effort. E.g. `gpt-5.6-sol-fast`, `gpt-5.6-sol-high-fast`, `gpt-5.6-sol-max`, `gpt-5.6-sol-ultra`. The image model (`gpt-image-2`) does not take suffixes.
->
-> **Plan Routing**: Accounts on different plans auto-route to the models returned for that account by the Codex backend. Do not treat old Plus-only notes as fixed model access rules. Models are dynamically fetched and auto-synced; if a model appears in the Dashboard or `/v1/models/catalog`, it can be used as the request `model`.
->
-> **Dashboard model picker ≠ config file**: Changing the model in the Dashboard only affects the UI display and API examples — it does **not** modify `model.default` in `config/default.yaml` or `data/local.yaml`. The actual model used is determined by the `model` field in each client request (Cursor, Claude Code, etc.). The `model.default` config is only a fallback when the client omits the model field.
->
-> **Max token note**: the table follows the current `config/models.yaml` and Codex runtime `/v1/models/catalog` metadata. `—` means the current catalog does not return that field, not that the model is unavailable. Runtime data fetched from the Codex backend overrides static values and preserves `contextWindow`, `maxContextWindow`, `maxOutputTokens`, and `truncationPolicyLimit`. Request fields such as `context_window`, `max_context_window`, `truncation_policy`, and `max_output_tokens` are not usable switches; forwarding them to the native Codex API returns `400 Unsupported parameter`.
-
-### 🖼️ Image Generation
-
-Image generation rides on `/v1/responses` via the built-in `image_generation` tool; the backend is always `gpt-image-2`.
-
-**Prerequisite**: a **ChatGPT Plus or higher** account (free accounts have the tool silently stripped by upstream, and the model falls back to replying with an SVG snippet).
-
-```bash
-curl -N http://localhost:8080/v1/responses \
-  -H "Authorization: Bearer $PROXY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-5.6-sol",
-    "stream": true,
-    "input": [{"role":"user","content":"Draw a red circle on white background."}],
-    "tools": [{"type":"image_generation","size":"3840x2160"}]
-  }'
-```
-
-Tunable fields: `size` (can request 1024×1024 / 1024×1536 / 1536×1024 / 2048×2048 / 2048×3072 / 3072×2048 / 3840×2160 / `auto`), `output_format` (`png` / `jpeg` / `webp`), `output_compression` (jpeg / webp only), `background` (`auto` / `opaque`), `moderation` (`auto` / `low`), `partial_images` (0–3). Only 1 image per call (`n` is fixed to 1); the `model` field is always rewritten upstream to the image tool's actual model (currently echoed as `gpt-image-2-codex`). See [API.md](./API.md#image_generation-tool).
-
-> **`size` is not a strict pixel-dimension guarantee.** The proxy preserves and sends the client-specified value, but upstream currently normalizes requests like `2048x2048`, `2K`, and `4K` to `size: "auto"` and determines the actual output dimensions dynamically. In real requests tested on 2026-08-10, a `size: "2048x2048"` tool configuration echoed back as `auto`, and both `image_generation_call.size` and the decoded PNG pixels were `1254x1254`. Therefore, you cannot rely on this field for native, exact 2K/4K outputs; refer to the result item's `size` or the decoded image dimensions. If your workload strictly requires exact `2048x2048` files, apply post-processing such as interpolation or AI upscaling after generation.
-
-In the stream, the `image_generation_call` item's `result` field is a base64-encoded image; `revised_prompt` contains the final prompt used by the model.
-
-**Edit mode** (with a reference image): include `{"type":"input_image","image_url":"data:image/png;base64,..."}` in the user message `content` array.
-
-> The `/v1/chat/completions` compatibility path accepts the `image_generation` tool so OpenAI clients do not fail schema validation, but image payloads are only exposed reliably through `/v1/responses` as `image_generation_call.result`. Use `/v1/responses` when you need the image bytes.
-
-## 🔗 Client Setup
-
-> Get your API Key from the dashboard (`http://localhost:8080`). Use a concrete model ID (default `gpt-5.6-sol`) or any [model ID](#-available-models) as the model name.
-
-### Claude Code (CLI)
-
-```bash
-export ANTHROPIC_BASE_URL=http://localhost:8080
-export ANTHROPIC_API_KEY=your-api-key
-# Switch model: export ANTHROPIC_MODEL=gpt-5.6-sol / gpt-5.6-terra / gpt-5.6-luna / gpt-5.6-sol-fast ...
-claude
-```
-
-> Copy env vars from the **Anthropic SDK Setup** card in the dashboard (includes Opus / Sonnet / Haiku tier model config).
->
-> Recommended models: Opus → `gpt-5.6-sol`, Sonnet → `gpt-5.6-terra`, Haiku → `gpt-5.6-luna`.
-
-### Codex CLI
-
-`~/.codex/config.toml`:
-```toml
-[model_providers.proxy_codex]
-name = "Codex Proxy"
-base_url = "http://localhost:8080/v1"
-wire_api = "responses"
-
-# Inline the API Key (recommended for local single-user setups)
-[model_providers.proxy_codex.http_headers]
-Authorization = "Bearer your-api-key"
-
-[profiles.default]
-model = "gpt-5.6-sol"
-model_provider = "proxy_codex"
-```
-
-> 💡 To keep the key out of the config file (shared machine / open-source repo), drop the `http_headers` block and use `env_key = "PROXY_API_KEY"` instead, then `export PROXY_API_KEY=your-api-key && codex`.
-
-### Claude Desktop
-
-1. **Enable Developer Mode**: Click menu **Help** → **Troubleshooting** → **Enable Developer Mode**.
-2. **Configure Third-Party Inference**: Click the new **Developer** menu → **Configure Third-Party Inference...**.
-3. **Fill in details**:
-   - **Endpoint**: `http://127.0.0.1:8080`
-   - **API Key**: your-api-key
-   - **Model**: `claude-opus-4-7` / `claude-sonnet-4-6` / `claude-haiku-4-5`
-
-> Alternatively, edit the config file (usually a JSON file in `%APPDATA%\Claude-3p\configLibrary\` on Windows, or `~/Library/Application Support/Claude-3p/configLibrary/` on Mac), adding the following fields:
-> ```json
-> {
->   "disableDeploymentModeChooser": true,
->   "inferenceProvider": "gateway",
->   "inferenceGatewayBaseUrl": "http://127.0.0.1:8080",
->   "inferenceGatewayApiKey": "your-api-key",
->   "inferenceGatewayAuthScheme": "bearer",
->   "inferenceModels": [
->     "claude-opus-4-7",
->     "claude-sonnet-4-6",
->     "claude-haiku-4-5"
->   ]
-> }
-> ```
-
-Built-in Claude-shaped model names map to Codex models. Put custom mappings in `data/local.yaml`; do not edit `config/models.yaml`:
-
-```yaml
-model:
-  aliases:
-    claude-opus-4-7: gpt-5.6-sol
-    claude-sonnet-4-6: gpt-5.6-terra
-    claude-haiku-4-5: gpt-5.6-luna
-    my-openai: openai:gpt-4o
-    my-deepseek: deepseek-chat
-```
-
-The left side is the model name used by the client; the right side is the real upstream model. The target can be a Codex model ID, a provider-prefixed model such as `openai:gpt-4o` / `anthropic:claude-sonnet-4-5` / `gemini:gemini-2.5-pro`, or a model already bound to a custom provider via `model_routing` such as `deepseek-chat`. Aliases appear in `/v1/models`; direct provider requests rewrite the outgoing `model` to the mapped target.
-
-> 💡 **Troubleshooting (Windows)**: If Claude Desktop shows `ERR_CONNECTION_REFUSED` when using `127.0.0.1` (and `must use https` when using `localhost`), it means Node.js is only binding to IPv6 by default. Go to the Codex Proxy dashboard settings, change **Host** to `127.0.0.1`, or add `server: { host: "127.0.0.1" }` to `data/local.yaml` and restart the proxy.
->
-> 💡 **LAN Usage Tip**: Claude Desktop strictly validates the endpoint and **only allows** `https://` or exactly `http://127.0.0.1`. If your proxy is on another machine in the LAN (e.g. `192.168.x.x`), you cannot use it directly via HTTP. Workarounds:
-> 1. **SSH Tunnel (Easiest)**: Run `ssh -L 8080:127.0.0.1:8080 user@192.168.x.x` on your client machine, then use `http://127.0.0.1:8080` in Claude.
-> 2. **Reverse Proxy**: Setup Caddy or Nginx with a valid HTTPS certificate for your LAN IP.
-
-### Codex Desktop (Official App)
-
-The official client shares configuration with the CLI. Restart the app after editing.
-
-`~/.codex/config.toml`:
-```toml
-[model_providers.proxy_codex]
-name = "Codex Proxy"
-base_url = "http://localhost:8080/v1"
-wire_api = "responses"
-
-[model_providers.proxy_codex.http_headers]
-Authorization = "Bearer your-api-key"
-
-[profiles.default]
-model = "gpt-5.6-sol"
-model_provider = "proxy_codex"
-```
-
-> 💡 **Why not `env_key`?** macOS/Windows GUI apps do not inherit env vars from your shell rc files — `export PROXY_API_KEY=...` in your terminal is invisible to the GUI process and Codex Desktop will fail with `Missing environment variable`. Inlining `Authorization` via `http_headers` avoids `launchctl setenv` / LaunchAgent gymnastics. Switch back to `env_key = "PROXY_API_KEY"` only when you need the key out of the config file.
->
-> ⚠️ When logged in via "ChatGPT account", existing sessions might bypass this config and hit the official upstream directly. New sessions started after `[model_providers.proxy_codex]` is wired up + `profiles.default.model_provider = "proxy_codex"` will route through the proxy.
-
-### Claude for VSCode / JetBrains
-
-Open Claude extension settings → **API Configuration**:
-- **API Provider**: Anthropic
-- **Base URL**: `http://localhost:8080`
-- **API Key**: your API key
-
-### Cursor
-
-1. Settings → Models → OpenAI API
-2. **Base URL**: `http://localhost:8080/v1`
-3. **API Key**: your API key
-4. Add model `gpt-5.6-sol`
-
-### Windsurf
-
-1. Settings → AI Provider → **OpenAI Compatible**
-2. **API Base URL**: `http://localhost:8080/v1`
-3. **API Key**: your API key
-4. **Model**: `gpt-5.6-sol`
-
-### Cline (VSCode Extension)
-
-1. Cline sidebar → gear icon
-2. **API Provider**: OpenAI Compatible
-3. **Base URL**: `http://localhost:8080/v1`
-4. **API Key**: your API key
-5. **Model ID**: `gpt-5.6-sol`
-
-### Continue (VSCode Extension)
-
-`~/.continue/config.json`:
-```json
-{
-  "models": [{
-    "title": "Codex",
-    "provider": "openai",
-    "model": "gpt-5.6-sol",
-    "apiBase": "http://localhost:8080/v1",
-    "apiKey": "your-api-key"
-  }]
-}
-```
-
-### aider
-
-```bash
-aider --openai-api-base http://localhost:8080/v1 \
-      --openai-api-key your-api-key \
-      --model openai/gpt-5.6-sol
-```
-
-### Cherry Studio
-
-1. Settings → Model Services → Add
-2. **Type**: OpenAI
-3. **API URL**: `http://localhost:8080/v1`
-4. **API Key**: your API key
-5. Add model `gpt-5.6-sol`
-
-### Pi Coding Agent (pi)
-
-[Pi Coding Agent](https://github.com/earendil-works/pi) (`@earendil-works/pi-coding-agent`) can be configured via `~/.pi/agent/models.json` to connect to Codex Proxy.
-
-#### Option 1: OpenAI Completions Protocol (Recommended)
-
-Edit `~/.pi/agent/models.json`:
-```json
-{
-  "providers": {
-    "codex-proxy": {
-      "baseUrl": "http://localhost:8080/v1",
-      "api": "openai-completions",
-      "apiKey": "your-api-key",
-      "models": [
-        {
-          "id": "gpt-5.6-sol",
-          "name": "Codex GPT-5.6 Sol",
-          "contextWindow": 1050000,
-          "maxTokens": 128000,
-          "input": ["text", "image"]
-        },
-        {
-          "id": "gpt-5.6-terra",
-          "name": "Codex GPT-5.6 Terra",
-          "contextWindow": 1050000,
-          "maxTokens": 128000,
-          "input": ["text", "image"]
-        }
-      ]
-    }
-  }
-}
-```
-
-> 💡 `apiKey` can also be set to `"$PROXY_API_KEY"`, then supplied via `export PROXY_API_KEY=your-api-key` in your shell.
-
-#### Option 2: Anthropic Messages Protocol
-
-```json
-{
-  "providers": {
-    "codex-proxy-anthropic": {
-      "baseUrl": "http://localhost:8080",
-      "api": "anthropic-messages",
-      "apiKey": "your-api-key",
-      "models": [
-        {
-          "id": "gpt-5.6-sol",
-          "name": "Codex GPT-5.6 Sol",
-          "contextWindow": 1050000,
-          "maxTokens": 128000,
-          "input": ["text", "image"]
-        }
-      ]
-    }
-  }
-}
-```
-
-#### Option 3: Codex Responses Protocol (Passthrough)
-
-```json
-{
-  "providers": {
-    "codex-proxy-responses": {
-      "baseUrl": "http://localhost:8080/v1",
-      "api": "openai-responses",
-      "apiKey": "your-api-key",
-      "models": [
-        {
-          "id": "gpt-5.6-sol",
-          "name": "Codex GPT-5.6 Sol",
-          "contextWindow": 1050000,
-          "maxTokens": 128000,
-          "input": ["text", "image"]
-        }
-      ]
-    }
-  }
-}
-```
-
-Run Pi:
-```bash
-pi --provider codex-proxy --model gpt-5.6-sol
-```
-
-### Ollama-Compatible Clients
-
-Enable it in Dashboard → Settings → **Ollama Bridge**, then use the default Ollama base URL:
-
-| Setting | Value |
-|---------|-------|
-| Base URL | `http://localhost:11434` |
-| API Key | Not required; the bridge uses the Codex Proxy key internally |
-| Model | `gpt-5.6-sol` (or any model ID) |
-
-```bash
-curl http://localhost:11434/api/tags
-
-curl http://localhost:11434/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"model":"gpt-5.6-sol","messages":[{"role":"user","content":"Hello!"}],"stream":true}'
-```
-
-> The Ollama API has no authentication. The bridge listens on `127.0.0.1` by default; do not expose it to the public internet or untrusted LANs.
-
-### Any OpenAI-Compatible Client
-
-| Setting | Value |
-|---------|-------|
-| Base URL | `http://localhost:8080/v1` |
-| API Key | from dashboard |
-| Model | `gpt-5.6-sol` (or any model ID) |
-
-<details>
-<summary>SDK examples (Python / Node.js)</summary>
-
-**Python**
-```python
-from openai import OpenAI
-client = OpenAI(base_url="http://localhost:8080/v1", api_key="your-api-key")
-for chunk in client.chat.completions.create(
-    model="gpt-5.6-sol", messages=[{"role": "user", "content": "Hello!"}], stream=True
-):
-    print(chunk.choices[0].delta.content or "", end="")
-```
-
-**Node.js**
-```typescript
-import OpenAI from "openai";
-const client = new OpenAI({ baseURL: "http://localhost:8080/v1", apiKey: "your-api-key" });
-const stream = await client.chat.completions.create({
-  model: "gpt-5.6-sol", messages: [{ role: "user", content: "Hello!" }], stream: true,
-});
-for await (const chunk of stream) {
-  process.stdout.write(chunk.choices[0]?.delta?.content || "");
-}
-```
-
-</details>
-
-## ⚙️ Configuration
-
-All configuration in `config/default.yaml`:
-
-### CORS Allowed Hosts
-
-Configure allowed CORS origins via the `CORS_ALLOWED_HOSTS` environment variable, which maps to the `server.cors` field in the config file. Separate multiple hosts with commas:
-
-```bash
-export CORS_ALLOWED_HOSTS="example.com,another-domain.com"
-```
-
-Or in `data/local.yaml`:
-
-```yaml
-server:
-  cors:
-    - "https://example.com"
-    - "https://another-domain.com"
-```
-
-| Section | Key Settings | Description |
-|---------|-------------|-------------|
-| `server` | `host`, `port`, `proxy_api_key` | Listen address and API key |
-| `api` | `base_url`, `timeout_seconds` | Upstream API URL and timeout |
-| `client` | `profile`, `originator`, `app_version`, `build_number`, `platform`, `arch`, `chromium_version` | Client fingerprint preset (`codex_cli` / `codex_desktop` / `opencode` / `pi` / `custom`) and version metadata |
-| `model` | `default`, `default_reasoning_effort`, `default_service_tier`, `aliases`, `custom_models`, `inject_desktop_context` | Default model, reasoning config, aliases, and custom catalog entries |
-| `auth` | `rotation_strategy`, `rate_limit_backoff_seconds` | Rotation strategy and rate limit backoff |
-| `tls` | `proxy_url`, `force_http11` | TLS proxy and HTTP version |
-| `quota` | `refresh_interval_minutes`, `warning_thresholds`, `skip_exhausted` | Usage snapshots, threshold config, exhausted-account skipping |
-| `session` | `ttl_minutes`, `cleanup_interval_minutes` | Dashboard session management |
-| `ollama` | `enabled`, `host`, `port`, `version`, `disable_vision` | Ollama-compatible bridge |
-
-### Client Profile & Fingerprint Presets
-
-`client.profile` allows switching client identity presets with automatic header and anti-detection formatting:
-
-```yaml
-client:
-  profile: codex_cli         # Presets: codex_cli (default), codex_desktop, opencode, pi, custom
-  # Preset details:
-  # - codex_cli:     Official Codex CLI clean terminal headers (originator: codex_cli_rs), strips browser-only headers (sec-ch-ua, etc.)
-  # - codex_desktop: Official Codex Desktop complete headers (originator: Codex Desktop), includes sec-ch-ua and Chromium version
-  # - opencode:      opencode terminal headers (originator: opencode)
-  # - pi:            pi terminal headers (originator: pi)
-  # - custom:        Fully custom mode, reads client.originator and fingerprint.yaml template
-```
-
-Additionally, the proxy automatically derives and persists an isolated `x-codex-installation-id` per account (under `data/installation_ids/`), ensuring each account retains an independent device identity and preventing multi-account cross-correlation upstream.
-
-### Model Aliases
-
-`model.aliases` maps client-facing model names to the real upstream model. This is useful when Claude Desktop / Cursor / Continue only lets you pick certain model IDs, or when you want shorter local names.
-
-You can also manage aliases in Dashboard → Settings → **Model Aliases**. Saving writes to `data/local.yaml` and hot-reloads the backend, so you do not need to edit `config/default.yaml`.
-
-```yaml
-model:
-  aliases:
-    claude-opus-4-7: gpt-5.6-sol
-    sonnet-local: gpt-5.6-terra
-    openai-fast: openai:gpt-4o
-    deepseek-local: deepseek-chat
-
-providers:
-  custom:
-    deepseek:
-      api_key: "sk-..."
-      base_url: "https://api.deepseek.com/v1"
-      models: ["deepseek-chat"]
-model_routing:
-  deepseek-chat: deepseek
-```
-
-Alias resolution runs before `model_routing` and built-in Claude/Gemini auto-routing. Aliases targeting Codex models still work with Codex suffixes such as `-fast` / `-high`; aliases targeting third-party providers rewrite the outgoing direct request `model` field to the mapped target.
-
-If you need to add fully custom Codex-compatible model IDs to the catalog, configure `model.custom_models` in `data/local.yaml`. A string entry uses default text/medium metadata; an object entry can define display name, reasoning efforts, context, and output limits:
-
-```yaml
-model:
-  custom_models:
-    - local-simple
-    - id: local-rich
-      display_name: Local Rich
-      description: Local rich model
-      supported_reasoning_efforts: [low, high]
-      default_reasoning_effort: high
-      input_modalities: [text, image]
-      output_modalities: [text]
-      context_window: 12345
-      max_context_window: 23456
-      max_output_tokens: 3456
-```
-
-### Quota Rotation
-
-When `quota.skip_exhausted: true`, the account pool skips accounts whose cached quota is already exhausted before session affinity / `preferredEntryId` is applied. A long conversation therefore cannot force routing back to a cached-exhausted account.
-
-The skip condition is currently `rate_limit.limit_reached === true`, `secondary_rate_limit.limit_reached === true`, or `code_review_rate_limit.limit_reached === true` in cached quota. If `used_percent` is merely near 100, for example 99%, but upstream has not set `limit_reached`, the proxy may still use that account. Once upstream returns 429, the account is marked `rate_limited`, enters backoff, and the request is retried with another available account. Secondary and code-review windows are removed from cache after their own `reset_at` passes, so an account is not skipped forever on stale quota data.
-
-### Ollama Bridge Configuration
-
-```yaml
-ollama:
-  enabled: false          # true = start the built-in Ollama-compatible listener
-  host: 127.0.0.1         # localhost-only by default
-  port: 11434             # Ollama default port
-  version: "0.18.3"       # value returned by /api/version
-  disable_vision: false   # true = do not advertise vision in /api/show
-```
-
-Supported Ollama endpoints:
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `http://localhost:11434/api/version` | GET | Ollama version probe |
-| `http://localhost:11434/api/tags` | GET | Model list |
-| `http://localhost:11434/api/show` | POST | Model metadata |
-| `http://localhost:11434/api/chat` | POST | Chat completions with streaming NDJSON |
-| `http://localhost:11434/v1/*` | Any | OpenAI `/v1` passthrough |
-
-For Docker deployments that need host access to `11434`:
-
-1. Set `ollama.enabled: true` and `ollama.host: 0.0.0.0` in the Dashboard or `data/local.yaml`.
-2. Uncomment the `127.0.0.1:${OLLAMA_BRIDGE_PORT:-11434}:11434` port mapping in `docker-compose.yml`.
-3. Keep the host binding on `127.0.0.1` unless you intentionally want to expose an unauthenticated Ollama API.
-
-Browser CORS access is limited to loopback origins such as `localhost`, `127.x.x.x`, and `::1`; non-local web origins are not allowed to read bridge responses. The bridge injects the configured Codex Proxy API key for `/v1/*` passthrough requests, so exposing it beyond localhost effectively grants unauthenticated access to the main proxy API.
-
-### Listen Address
-
-The source/Docker default config listens on `::` (IPv6 unspecified, usually still reachable from localhost). Electron passes `127.0.0.1` at startup unless `data/local.yaml` explicitly overrides `server.host`. To force localhost-only binding:
-
-```yaml
-server:
-  host: "127.0.0.1"
-```
-
-To allow LAN access, set `server.host: "0.0.0.0"` in `data/local.yaml` and use a strong proxy API key.
-
-### API Key
-
-```yaml
-server:
-  proxy_api_key: "pwd"    # clients use Authorization: Bearer pwd
-  # proxy_api_key: null   # no global key; logged-in accounts still have account-level codex-proxy-xxxx keys
-```
-
-On first startup, if `data/local.yaml` is missing, Codex Proxy creates it with `server.proxy_api_key: pwd`. The active key is shown in the dashboard API Configuration section.
-
-### Environment Variable Overrides
-
-| Variable | Overrides |
-|----------|-----------|
-| `PORT` | `server.port` |
-| `CODEX_PLATFORM` | `client.platform` |
-| `CODEX_ARCH` | `client.arch` |
-| `HTTPS_PROXY` | `tls.proxy_url` |
-| `OLLAMA_BRIDGE_ENABLED` | `ollama.enabled` |
-| `OLLAMA_BRIDGE_HOST` | `ollama.host` |
-| `OLLAMA_BRIDGE_PORT` | `ollama.port` |
-| `OLLAMA_BRIDGE_VERSION` | `ollama.version` |
-| `OLLAMA_BRIDGE_DISABLE_VISION` | `ollama.disable_vision` |
-
-## 📡 API Endpoints
-
-<details>
-<summary>Click to expand main endpoint list</summary>
-
-**Protocol Endpoints**
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/chat/completions` | POST | OpenAI format chat completions |
-| `/v1/responses` | POST | Codex Responses API passthrough |
-| `/v1/responses/compact` | POST | Codex remote compact response proxy |
-| `/v1/alpha/search` | POST | Codex standalone Web Search (`codex-responses` API-key wire) |
-| `/v1/images/generations` | POST | Codex JSON image generation passthrough (`codex-responses` API-key wire) |
-| `/v1/images/edits` | POST | Codex JSON image edit passthrough (`codex-responses` API-key wire) |
-| `/v1/messages` | POST | Anthropic format chat completions |
-| `/v1/models` | GET | List available models |
-| `/v1/models/catalog` | GET | Full model catalog for the dashboard |
-| `/v1/models/:modelId/info` | GET | Reasoning and metadata for one model |
-| `/v1beta/models` | GET | Gemini-format model list |
-| `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent` |
-| `:11434/api/chat` | POST | Ollama-compatible chat completions (requires Ollama Bridge) |
-
-**Auth & Accounts**
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/auth/login` | GET | OAuth login entry |
-| `/auth/accounts` | GET | Account list (`?quota=true` / `?quota=fresh`) |
-| `/auth/accounts` | POST | Add single account (token or refreshToken) |
-| `/auth/accounts/import` | POST | Bulk import accounts |
-| `/auth/accounts/export` | GET | Export accounts (`?format=minimal` for compact) |
-| `/auth/accounts/batch-delete` | POST | Batch delete accounts |
-| `/auth/accounts/batch-status` | POST | Batch update account status |
-| `/auth/accounts/health-check` | POST | Batch account health check |
-| `/auth/accounts/:id/refresh` | POST | Refresh and probe one account |
-| `/auth/accounts/:id/quota` | GET | Actively query one account quota |
-| `/auth/accounts/:id/cookies` | GET/POST/DELETE | Manage account Cloudflare cookies |
-| `/auth/quota/warnings` | GET | Current quota warning state |
-
-**Third-Party API Keys**
-
-For API-key upstreams that require official Codex client context on a standard Responses API, choose the `Custom` provider and `Codex Responses (client context)` protocol in the Dashboard. Set Base URL to the API v1 root (for example, `https://provider.example.com/v1`), not the full `/responses` endpoint. The primary Responses call uses HTTP SSE and sends Codex headers, installation/session/thread/window IDs, and client metadata. The same wire also routes standalone Web Search, remote compact, and Codex JSON image generation/edit requests by the body `model`; Embeddings remain unsupported. If the provider does not expose a compatible `/models` endpoint, enter the model name manually in the Dashboard.
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/auth/api-keys/catalog` | GET | Built-in providers and suggested model catalog |
-| `/auth/api-keys` | GET/POST | List / add API keys |
-| `/auth/api-keys/models` | POST | Fetch models from a custom OpenAI-compatible provider |
-| `/auth/api-keys/export` | GET | Export API key config |
-| `/auth/api-keys/import` | POST | Import API key config |
-| `/auth/api-keys/batch-delete` | POST | Batch delete API keys |
-| `/auth/api-keys/:id` | DELETE | Delete one API key |
-| `/auth/api-keys/:id/label` | PATCH | Update API key label |
-| `/auth/api-keys/:id/status` | PATCH | Enable or disable an API key |
-
-**Account Import/Export Examples**
-
-```bash
-# Export all accounts (full format with tokens)
-curl -s http://localhost:8080/auth/accounts/export \
-  -H "Authorization: Bearer your-api-key" > backup.json
-
-# Export minimal format (refreshToken + label only, safe to share)
-curl -s "http://localhost:8080/auth/accounts/export?format=minimal" \
-  -H "Authorization: Bearer your-api-key" > backup-minimal.json
-
-# Bulk import (token, refreshToken, or both)
-curl -X POST http://localhost:8080/auth/accounts/import \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d '{
-    "accounts": [
-      { "token": "eyJhbGciOi..." },
-      { "refreshToken": "v1.abc..." },
-      { "refreshToken": "v1.def...", "label": "Backup" }
-    ]
-  }'
-# Returns: { "added": 2, "updated": 1, "failed": 0, "errors": [] }
-
-# One-step backup restore (export file → import to another instance)
-curl -X POST http://localhost:8080/auth/accounts/import \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d @backup.json
-```
-
-**Admin**
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/admin/rotation-settings` | GET/POST | Rotation strategy config |
-| `/admin/quota-settings` | GET/POST | Quota refresh & warning config |
-| `/admin/ollama-settings` | GET/POST | Ollama Bridge config |
-| `/admin/ollama-status` | GET | Ollama Bridge runtime status |
-| `/admin/refresh-models` | POST | Trigger manual model list refresh |
-| `/admin/usage-stats/summary` | GET | Usage stats summary |
-| `/admin/usage-stats/history` | GET | Usage time series |
-| `/admin/logs` | GET | Request log list |
-| `/admin/logs/state` | GET/POST | Log capture settings |
-| `/admin/update-status` | GET | Self-update status |
-| `/admin/check-update` | POST | Check for updates |
-| `/admin/apply-update` | POST | Apply self-update |
-| `/health` | GET | Health check |
-
-**Proxy Pool**
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/proxies` | GET/POST | List / add proxies |
-| `/api/proxies/:id` | PUT/DELETE | Update / remove proxy |
-| `/api/proxies/:id/check` | POST | Health check single proxy |
-| `/api/proxies/check-all` | POST | Health check all proxies |
-| `/api/proxies/assign` | POST | Assign proxy to account |
-| `/api/proxies/assignments` | GET | View account proxy assignments |
-| `/api/proxies/assign-bulk` | POST | Bulk assign proxies |
-| `/api/proxies/assign-rule` | POST | Rule-based proxy assignment |
-| `/api/proxies/export` | GET | Export proxy pool YAML |
-| `/api/proxies/import` | POST | Import proxy pool YAML |
-
-</details>
-
-## 📋 Requirements
-
-- **Node.js** 18+ (20+ recommended)
-- **Rust** — required for source builds (compiles TLS native addon); Docker / desktop app ship pre-built
-- **ChatGPT account** — free account is sufficient
-- **Docker** (optional)
-
-## ⚠️ Notes
-
-- Codex API is **stream-only**. `stream: false` causes the proxy to stream internally and return assembled JSON.
-- This project relies on Codex Desktop's public API. Upstream updates are auto-detected and fingerprints auto-synced.
-- Windows source builds need Rust toolchain for the TLS native addon. Docker deployment has it pre-built.
-
-## ☕ Donate & Community
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <img src="./.github/assets/donate.png" width="180" alt="WeChat Donate"><br>
-        <sub>☕ Donate</sub>
-      </td>
-      <td align="center">
-        <img src="./.github/assets/tgimage.png" width="180" alt="Telegram Group"><br>
-        <sub>💬 Telegram</sub>
-      </td>
-    </tr>
-  </table>
-</div>
-
-## 🙏 Acknowledgements
-
-Codex Proxy started as a personal project to scratch my own itch, and it has grown with far more support and warmth than I ever anticipated.
-
-Special thanks to all contributors who submitted code, documentation, fixes, or PRs:
-
-[@SsuJojo](https://github.com/SsuJojo) · [@TutuchanXD](https://github.com/TutuchanXD) · [@kanweiwei](https://github.com/kanweiwei) · [@et2010](https://github.com/et2010) · [@d-demand-priv](https://github.com/d-demand-priv) · [@hangox](https://github.com/hangox) · [@jarvisluk](https://github.com/jarvisluk) · [@jeasonstudio](https://github.com/jeasonstudio) · [@JPClaw12](https://github.com/JPClaw12) · [@lezi-fun](https://github.com/lezi-fun) · [@lookvincent](https://github.com/lookvincent) · [@pocper1](https://github.com/pocper1) · [@woai66](https://github.com/woai66) · [@xsShuang](https://github.com/xsShuang) · [@yuwei5380](https://github.com/yuwei5380) · [@aeltorio](https://github.com/aeltorio) · [@williamjameshandley](https://github.com/williamjameshandley) · [@FlavienKlr](https://github.com/FlavienKlr) · [@zyycn](https://github.com/zyycn)
-
-Thanks as well to everyone who opened [Issues](https://github.com/icebear0828/codex-proxy/issues) with bug reproductions, logs, compatibility reports, and feature suggestions. Those reports directly shaped our proxy engine, account rotation, Dashboard, Ollama Bridge, and observability features.
-
-**Most of all, heartfelt thanks to every developer who silently uses, stars, and supports this project. Your continued love and support is what has kept me going and iterating to this day. I'm truly thrilled and grateful that so many people enjoy Codex Proxy!** ❤️
-
-## 📄 License
-
-**Non-Commercial** license:
-
-- **Allowed**: Personal learning, research, self-hosted deployment
-- **Prohibited**: Any commercial use including selling, reselling, paid proxy services, or commercial product integration
-
-Not affiliated with OpenAI. Users assume all risks and must comply with OpenAI's Terms of Service.
-
----
-
-<div align="center">
-  <sub>Built with Hono + TypeScript | Powered by Codex Desktop API</sub>
-</div>
+This project is distributed under the [Codex Proxy Non-Commercial Licence](./LICENCE), which grants only the non-commercial rights stated in that licence. Distributed modified copies must include the full licence, retain existing copyright, licence, and disclaimer notices, and be clearly identified as modified.

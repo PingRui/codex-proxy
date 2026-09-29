@@ -1,15 +1,15 @@
 services:
-  codex-proxy:
-    image: ghcr.io/icebear0828/codex-proxy:latest
-    # To build from source instead: comment out 'image' above, uncomment 'build' below
-    # build: .
+  nexora:
+    # Build from the checked-out source. A public GHCR image is intentionally
+    # not advertised until one has been published by the current repository.
+    build: .
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       # Loopback-only on the host by default; change to "${PORT:-8080}:8080"
       # if you intentionally want LAN access.
       - "127.0.0.1:${PORT:-8080}:8080"
-      - "1455:1455"
+      - "127.0.0.1:1455:1455"
       # Optional Ollama-compatible bridge. Enable ollama.enabled and use
       # ollama.host=0.0.0.0 inside the container before uncommenting.
       # Host binding stays loopback-only to avoid exposing the unauthenticated
@@ -37,10 +37,10 @@ services:
       - CODEX_PROXY_HOST=0.0.0.0
       - NODE_OPTIONS=${NODE_OPTIONS:---max-old-space-size=512}
 
-  # -- Automatic updates (uncomment to enable) --
+  # -- Automatic updates (uncomment only after using a published image) --
   # watchtower:
   #   image: containrrr/watchtower
   #   volumes:
   #     - /var/run/docker.sock:/var/run/docker.sock
-  #   command: --cleanup --interval 3600 codex-proxy
+  #   command: --cleanup --interval 3600 nexora
   #   restart: unless-stopped

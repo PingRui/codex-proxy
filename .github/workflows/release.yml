@@ -261,12 +261,12 @@ jobs:
               fi
               ;;
             linux)
-              for f in Codex-Proxy-*-linux* latest-linux.yml; do
+              for f in NEXORA-*-linux* latest-linux.yml; do
                 [ -f "$f" ] && files+=("$f")
               done
               ;;
             win)
-              for f in Codex-Proxy-*-win* latest.yml; do
+              for f in NEXORA-*-win* latest.yml; do
                 [ -f "$f" ] && files+=("$f")
               done
               ;;
