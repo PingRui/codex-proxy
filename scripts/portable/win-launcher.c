@@ -10,7 +10,7 @@
 #include <wchar.h>
 
 #define NODE_DOWNLOAD_URL L"https://nodejs.org/en/download/"
-#define RELEASES_URL L"https://github.com/icebear0828/codex-proxy/releases/latest"
+#define RELEASES_URL L"https://github.com/PingRui/codex-proxy/releases/latest"
 #define NODE_PROMPT_TIMEOUT_MS 15000
 #define TRAY_CALLBACK_MESSAGE (WM_APP + 1)
 #define TRAY_OPEN_DASHBOARD 1001

@@ -12,7 +12,7 @@ describe("syncChangelogSeries", () => {
 
 - Adds a release-safe changelog synchronizer.
 
-## [v2.1.x](https://github.com/icebear0828/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
+## [v2.1.x](https://github.com/PingRui/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
 
 ### Fixed
 
@@ -25,7 +25,7 @@ describe("syncChangelogSeries", () => {
 
 > 暂无已记录的变更。
 
-## [v2.1.x](https://github.com/icebear0828/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
+## [v2.1.x](https://github.com/PingRui/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
 
 ### Added
 
@@ -53,7 +53,7 @@ describe("syncChangelogSeries", () => {
 
 > 暂无已记录的变更。
 
-## [v3.0.x](https://github.com/icebear0828/codex-proxy/releases?q=3.0) - Unreleased
+## [v3.0.x](https://github.com/PingRui/codex-proxy/releases?q=3.0) - Unreleased
 
 ### Fixed
 
@@ -68,7 +68,7 @@ describe("syncChangelogSeries", () => {
 
 > 暂无已记录的变更。
 
-## [v2.1.x](https://github.com/icebear0828/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
+## [v2.1.x](https://github.com/PingRui/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
 `;
 
     expect(syncChangelogSeries(current, "2.1")).toBe(current);
@@ -83,7 +83,7 @@ describe("syncChangelogSeries", () => {
 
 - Restores the current release.
 
-## [v2.1.x](https://github.com/icebear0828/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
+## [v2.1.x](https://github.com/PingRui/codex-proxy/releases?q=2.1) - 2026-09-01 至 2026-09-07
 
 ### Fixed
 

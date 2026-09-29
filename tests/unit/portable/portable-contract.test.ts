@@ -76,7 +76,9 @@ describe("No-Node Lite distribution contract", () => {
     expect(nativeSource).toContain("TRAY_OPEN_DASHBOARD");
     expect(nativeSource).toContain("TRAY_QUIT");
     expect(nativeSource).toContain("TRAY_OPEN_RELEASES");
-    expect(nativeSource).toContain("RELEASES_URL");
+    expect(nativeSource).toContain(
+      '#define RELEASES_URL L"https://github.com/PingRui/codex-proxy/releases/latest"',
+    );
     expect(nativeSource).toContain("CODEX_PROXY_WEBVIEW2_HOST");
     expect(nativeSource).toContain("start_webview2_host");
     expect(nativeSource).toContain("IDI_APP_ICON");

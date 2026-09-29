@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const EMPTY_UNRELEASED_NOTICE = "> 暂无已记录的变更。";
-const REPOSITORY_URL = "https://github.com/icebear0828/codex-proxy";
+const REPOSITORY_URL = "https://github.com/PingRui/codex-proxy";
 
 export function resolveSeries(version) {
   const match = /^(\d+)\.(\d+)\.\d+(?:[-+].*)?$/.exec(version);

@@ -39,7 +39,7 @@ vi.mock("electron", () => ({
 
 vi.mock("../electron/constants.js", () => ({
   IS_MAC: false,
-  GITHUB_REPO: "icebear0828/codex-proxy",
+  GITHUB_REPO: "PingRui/codex-proxy",
 }));
 
 // Import after mocks are set up
@@ -151,6 +151,9 @@ describe("auto-updater state machine", () => {
     expect(state.checking).toBe(false);
     expect(state.updateAvailable).toBe(true);
     expect(state.version).toBe("2.0.0");
+    expect(state.releaseUrl).toBe(
+      "https://github.com/PingRui/codex-proxy/releases/tag/v2.0.0",
+    );
     expect(mockOptions.rebuildTrayMenu).toHaveBeenCalled();
   });
 
