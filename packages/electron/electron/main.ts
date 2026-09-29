@@ -8,6 +8,10 @@
 import { app, BrowserWindow, Tray, Menu, shell, nativeImage, dialog } from "electron";
 import { resolve, join } from "path";
 import { pathToFileURL } from "url";
+import {
+  DESKTOP_SERVER_OPTIONS,
+  desktopServerOptionsWithRandomPort,
+} from "./server-options.js";
 import { existsSync, mkdirSync } from "fs";
 import {
   initAutoUpdater,
@@ -140,12 +144,13 @@ app.on("ready", async () => {
       publicDir: resolve(distRoot, "public"),
     });
 
-    // 4. Start the proxy server (try configured port first, fall back to random if occupied)
+    // 4. Start the loopback-only proxy in manual account mode. Try the
+    // configured port first, then fall back to a random local port.
     try {
-      serverHandle = await startServer({});
+      serverHandle = await startServer(DESKTOP_SERVER_OPTIONS);
     } catch {
       console.warn("[Electron] Default port in use, using random port");
-      serverHandle = await startServer({ port: 0 });
+      serverHandle = await startServer(desktopServerOptionsWithRandomPort());
     }
     console.log(`[Electron] Server started on port ${serverHandle.port}`);
 

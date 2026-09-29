@@ -355,7 +355,7 @@ export function releaseSession(state: string): void {
 let activeCallbackServer: Server | null = null;
 
 /**
- * Start a temporary HTTP server on 0.0.0.0:{port} that handles the OAuth
+ * Start a temporary HTTP server on 127.0.0.1:{port} that handles the OAuth
  * callback (`/auth/callback`). Closes any previously active callback server
  * first (since we always reuse port 1455).
  *
@@ -452,7 +452,7 @@ export function startCallbackServer(
     }
   });
 
-  server.listen(port, "0.0.0.0");
+  server.listen(port, "127.0.0.1");
   activeCallbackServer = server;
   console.log(`[OAuth] Temporary callback server started on port ${port}`);
 

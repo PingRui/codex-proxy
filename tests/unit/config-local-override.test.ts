@@ -148,7 +148,7 @@ server:
     expect(config.server.host).toBe("0.0.0.0");
   });
 
-  it("local.yaml host overrides Electron programmatic default", async () => {
+  it("local.yaml host overrides a programmatic default outside manual desktop mode", async () => {
     const localYaml = `
 server:
   host: "0.0.0.0"
@@ -157,7 +157,7 @@ server:
     const { loadConfig, hasLocalOverride } = await import("@src/config.js");
     const config = loadConfig(configDir);
 
-    // Simulate startServer host resolution (src/index.ts:103-105)
+    // Non-desktop launch modes retain the historical local.yaml precedence.
     const electronDefault = "127.0.0.1";
     const resolved = hasLocalOverride("server", "host")
       ? config.server.host

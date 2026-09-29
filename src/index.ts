@@ -58,6 +58,7 @@ import { startOllamaBridge, stopOllamaBridge } from "./ollama/server.js";
 import { createOfficialAgentRoutes } from "./routes/official-agent.js";
 import { installUncaughtErrorHandlers } from "./logs/error-log.js";
 import { awaitServerListening } from "./utils/await-listening.js";
+import { resolveListenHost } from "./server-options.js";
 
 export interface ServerHandle {
   close: () => Promise<void>;
@@ -228,11 +229,14 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
   app.route("/", webRoutes);
 
   // Start server
-  // User's explicit local.yaml host wins over programmatic options (e.g. Electron's 127.0.0.1 default)
+  // Desktop manual-account mode is always loopback-only. Other launch modes
+  // retain the existing local.yaml override behavior.
   const port = options?.port ?? config.server.port;
-  const host = hasLocalOverride("server", "host")
-    ? config.server.host
-    : (options?.host ?? config.server.host);
+  const host = resolveListenHost(
+    config.server.host,
+    hasLocalOverride("server", "host"),
+    options,
+  );
 
   const poolSummary = accountPool.getPoolSummary();
   const displayHost = (host === "0.0.0.0" || host === "::") ? "localhost" : host;
