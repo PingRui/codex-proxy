@@ -5,19 +5,16 @@ import { I18nProvider, useI18n } from "../../shared/i18n/context";
 import { useAccounts } from "../../shared/hooks/use-accounts";
 import { useDashboardAuth } from "../../shared/hooks/use-dashboard-auth";
 import { useErrorLogsCount } from "../../shared/hooks/use-error-logs";
-import { useGeneralSettings } from "../../shared/hooks/use-general-settings";
 import { useProxies } from "../../shared/hooks/use-proxies";
 import { useStatus } from "../../shared/hooks/use-status";
 import { useUpdateStatus } from "../../shared/hooks/use-update-status";
 import { ThemeProvider } from "../../shared/theme/context";
-import { AccountList } from "./components/AccountList";
 import { AddAccount } from "./components/AddAccount";
 import { ApiKeyManager } from "./components/ApiKeyManager";
 import { AppShell } from "./components/AppShell";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { PageHeader } from "./components/PageHeader";
-import { PoolOverview } from "./components/PoolOverview";
 import { ProxyPool } from "./components/ProxyPool";
 import { SettingsTab } from "./components/SettingsTab";
 import { UpdateModal } from "./components/UpdateModal";
@@ -26,6 +23,7 @@ import { LEGACY_HASH_REDIRECTS, NAV_ITEMS } from "./navigation";
 import { AccountManagement } from "./pages/AccountManagement";
 import { ClientKeysPage } from "./pages/ClientKeysPage";
 import { ErrorsPage } from "./pages/ErrorsPage";
+import { GatewayOverview } from "./pages/GatewayOverview";
 import { InfoPage } from "./pages/InfoPage";
 import { LogsPage } from "./pages/LogsPage";
 import { ProxySettings } from "./pages/ProxySettings";
@@ -91,7 +89,6 @@ function Dashboard() {
   const accounts = useAccounts();
   const proxies = useProxies();
   const status = useStatus(accounts.list.length);
-  const generalSettings = useGeneralSettings(null);
   const update = useUpdateMessage();
   const { onLogout } = useDashboardAuthCtx();
   const [showModal, setShowModal] = useState(false);
@@ -134,11 +131,6 @@ function Dashboard() {
   const pageTitle = NAV_ITEMS.find((item) => item.hash === activeHash);
   const visibleErrorCount = errorCount.unread;
 
-  const handleProxyChange = async (accountId: string, proxyId: string) => {
-    accounts.patchLocal(accountId, { proxyId });
-    await proxies.assignProxy(accountId, proxyId);
-  };
-
   const toolbar = (
     <Header
       onAddAccount={accounts.startAdd}
@@ -167,7 +159,7 @@ function Dashboard() {
       footer={<Footer updateStatus={update.status} />}
     >
       <div class="flex w-full flex-col">
-        {pageTitle && <PageHeader title={t(pageTitle.label)} />}
+        {pageTitle && routeHash !== "" && <PageHeader title={t(pageTitle.label)} />}
 
         <AddAccount
           visible={accounts.addVisible}
@@ -181,37 +173,7 @@ function Dashboard() {
           onAddFallbackUpstream={accounts.addFallbackUpstream}
         />
 
-        {routeHash === "" && (
-          <div class="flex flex-col gap-6">
-            <PoolOverview accounts={accounts.list} creditsPerUsd={generalSettings.data?.credits_per_usd} />
-            <AccountList
-              accounts={accounts.list}
-              loading={accounts.loading}
-              onDelete={accounts.deleteAccount}
-              onRefresh={accounts.refresh}
-              refreshing={accounts.refreshing}
-              lastUpdated={accounts.lastUpdated}
-              proxies={proxies.proxies}
-              onProxyChange={handleProxyChange}
-              onExport={accounts.exportAccounts}
-              onImport={accounts.importAccounts}
-              onToggleStatus={accounts.toggleStatus}
-              onUpdateLabel={accounts.updateLabel}
-              onUpdateCodexFingerprintMode={accounts.updateCodexFingerprintMode}
-              fallbackUpstream={accounts.fallbackUpstream}
-              fallbackActive={accounts.fallbackActive}
-              onUpdateFallbackUpstream={accounts.updateFallbackUpstream}
-              onDeleteFallbackUpstream={accounts.deleteFallbackUpstream}
-              selectedAccountId={accounts.selectedAccountId}
-              manualMode={accounts.manualMode}
-              selectingAccountId={accounts.selectingAccountId}
-              selectionNotice={accounts.selectionNotice}
-              onSelectAccount={accounts.selectAccount}
-              onDismissSelectionNotice={accounts.dismissSelectionNotice}
-            />
-            <ProxyPool proxies={proxies} />
-          </div>
-        )}
+        {routeHash === "" && <GatewayOverview accounts={accounts} status={status} onAddAccount={accounts.startAdd} />}
 
         {routeHash === "#/accounts" && <AccountManagement embedded />}
         {routeHash === "#/client-keys" && <ClientKeysPage masterApiKey={status.apiKey} />}

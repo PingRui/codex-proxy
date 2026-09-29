@@ -13,11 +13,11 @@ export interface GatewayState {
 }
 
 const gatewayTitleKeys = {
-  noAccounts: "gatewayNoAccounts" as TranslationKey,
-  selectAccount: "gatewaySelectAccount" as TranslationKey,
-  accountBlocked: "gatewayAccountBlocked" as TranslationKey,
-  ready: "gatewayReady" as TranslationKey,
-};
+  noAccounts: "gatewayNoAccounts",
+  selectAccount: "gatewaySelectAccount",
+  accountBlocked: "gatewayAccountBlocked",
+  ready: "gatewayReady",
+} satisfies Record<string, TranslationKey>;
 
 /**
  * Derive the desktop gateway's user-facing readiness from persisted accounts
