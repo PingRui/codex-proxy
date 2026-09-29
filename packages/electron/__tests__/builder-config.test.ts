@@ -39,7 +39,9 @@ const config = yaml.load(
 
 describe("electron-builder.yml", () => {
   it("has valid YAML structure", () => {
-    expect(config.appId).toBe("io.nexora.gateway");
+    // Keep the legacy app id so NSIS upgrades the existing installation
+    // instead of installing NEXORA as an unrelated side-by-side product.
+    expect(config.appId).toBe("com.codex-proxy.app");
     expect(config.productName).toBe("NEXORA");
     expect(config.artifactName).toBe("NEXORA-${version}-${os}-${arch}.${ext}");
     expect(config.electronVersion).toBeDefined();
@@ -77,6 +79,31 @@ describe("electron-builder.yml", () => {
 
   it("supports unsigned builds without Windows symlink privileges", () => {
     expect(config.win.signAndEditExecutable).toBe(false);
+  });
+
+  it("uses only the NEXORA PNG favicon in the web shell", () => {
+    const html = readFileSync(resolve(ROOT_DIR, "web", "index.html"), "utf-8");
+    const iconLinks = [...html.matchAll(/<link\s+rel=["']icon["'][^>]*>/g)].map((match) => match[0]);
+
+    expect(iconLinks).toHaveLength(1);
+    expect(iconLinks[0]).toContain('type="image/png"');
+    expect(iconLinks[0]).toContain('href="/icon.png"');
+    expect(html).not.toContain("favicon.ico");
+  });
+
+  it("applies the bundled icon to BrowserWindow and Tray at runtime", () => {
+    const mainSource = readFileSync(resolve(PKG_DIR, "electron", "main.ts"), "utf-8");
+
+    expect(mainSource).toContain("resolveDesktopIconPath");
+    expect(mainSource).toContain("...(iconPath ? { icon: iconPath } : {})");
+    expect(mainSource).toContain("nativeImage.createFromPath(iconPath)");
+  });
+
+  it("selects a compatible user-data path before Electron starts", () => {
+    const mainSource = readFileSync(resolve(PKG_DIR, "electron", "main.ts"), "utf-8");
+
+    expect(mainSource).toContain("resolveCompatibleUserDataPath");
+    expect(mainSource).toContain('app.setPath("userData", compatibleUserDataPath)');
   });
 
   it("files list includes dist-electron bundle", () => {

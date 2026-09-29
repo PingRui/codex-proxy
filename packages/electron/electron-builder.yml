@@ -1,4 +1,7 @@
-appId: io.nexora.gateway
+# Retain the legacy app id so NSIS recognizes existing Codex Proxy installs as
+# the same upgrade family. Product, executable, shortcut, and artifact names
+# remain NEXORA; changing appId would strand the old installation side-by-side.
+appId: com.codex-proxy.app
 productName: NEXORA
 electronVersion: "35.7.5"
 
@@ -43,7 +46,9 @@ extraResources:
 win:
   # Keep unsigned local builds reproducible on Windows machines where creating
   # the winCodeSign cache symlinks requires Developer Mode or elevation.
-  # Set this back to true when a production code-signing certificate is added.
+  # This also means electron-builder cannot stamp the EXE resource icon. The
+  # NEXORA icon is still applied explicitly to BrowserWindow and Tray at runtime.
+  # Re-enable resource editing only together with a tested signing environment.
   signAndEditExecutable: false
   target:
     - target: nsis

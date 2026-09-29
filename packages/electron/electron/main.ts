@@ -1,13 +1,14 @@
 /**
- * Electron main process for Codex Proxy desktop app.
+ * Electron main process for the NEXORA desktop app.
  *
  * Built by esbuild into dist-electron/main.cjs (CJS format).
  * Loads the backend ESM modules from asarUnpack (real filesystem paths).
  */
 
 import { app, BrowserWindow, Tray, Menu, shell, nativeImage, dialog } from "electron";
-import { resolve, join } from "path";
+import { resolve } from "path";
 import { pathToFileURL } from "url";
+import { APP_BRAND } from "../../../shared/brand.js";
 import {
   DESKTOP_SERVER_OPTIONS,
   desktopServerOptionsWithRandomPort,
@@ -22,6 +23,8 @@ import {
   stopAutoUpdater,
 } from "./auto-updater.js";
 import { IS_MAC } from "./constants.js";
+import { resolveDesktopIconPath } from "./icon-path.js";
+import { resolveCompatibleUserDataPath } from "./user-data-compat.js";
 
 
 let mainWindow: BrowserWindow | null = null;
@@ -29,6 +32,16 @@ let tray: Tray | null = null;
 let serverHandle: { close: () => Promise<void>; port: number } | null = null;
 let isQuitting = false;
 let allowProcessExit = false;
+
+// Set the visible brand before resolving the default user-data directory.
+// If a previous Codex Proxy installation contains gateway data, reuse that
+// directory in place; no migration copy can overwrite a newer NEXORA store.
+app.setName(APP_BRAND);
+const compatibleUserDataPath = resolveCompatibleUserDataPath({
+  appDataPath: app.getPath("appData"),
+  currentUserDataPath: app.getPath("userData"),
+});
+app.setPath("userData", compatibleUserDataPath);
 
 // Single instance lock
 const gotLock = app.requestSingleInstanceLock();
@@ -185,7 +198,7 @@ app.on("ready", async () => {
   } catch (err) {
     console.error("[Electron] Startup failed:", err);
     dialog.showErrorBox(
-      "Codex Proxy - Startup Error",
+      `${APP_BRAND} - Startup Error`,
       `Failed to start:\n\n${err instanceof Error ? err.stack ?? err.message : String(err)}`,
     );
     quitApplication();
@@ -193,16 +206,12 @@ app.on("ready", async () => {
 });
 
 function getAppIconPath(): string {
-  const baseDir = app.isPackaged
-    ? join(app.getAppPath(), "electron", "assets")
-    : join(__dirname, "..", "electron", "assets");
-  if (process.platform === "win32") {
-    const icoPath = join(baseDir, "icon.ico");
-    if (existsSync(icoPath)) return icoPath;
-  }
-  const pngPath = join(baseDir, "icon.png");
-  if (existsSync(pngPath)) return pngPath;
-  return "";
+  return resolveDesktopIconPath({
+    isPackaged: app.isPackaged,
+    appPath: app.getAppPath(),
+    moduleDir: __dirname,
+    platform: process.platform,
+  });
 }
 
 // ── Window ───────────────────────────────────────────────────────────
@@ -223,7 +232,7 @@ function createWindow(): void {
     height: 750,
     minWidth: 800,
     minHeight: 500,
-    title: "Codex Proxy",
+    title: APP_BRAND,
     autoHideMenuBar: true,
     ...(iconPath ? { icon: iconPath } : {}),
     // macOS: native hidden titlebar with traffic lights inset into content
@@ -375,7 +384,7 @@ function createTray(): void {
   }
 
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
-  tray.setToolTip("Codex Proxy");
+  tray.setToolTip(APP_BRAND);
   tray.setContextMenu(Menu.buildFromTemplate(buildTrayMenu()));
   tray.on("double-click", () => createWindow());
 }
