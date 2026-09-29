@@ -12,12 +12,16 @@
 
 import type { Account, AccountQuota } from "../../../shared/types";
 
-/** True when any of the 3 cachedQuota buckets reports limit_reached. */
+/** True when any cached quota bucket reports limit_reached. */
 export function isQuotaExhausted(quota: AccountQuota | undefined | null): boolean {
   if (!quota) return false;
+  const modelLimits = Object.values(quota.rate_limits_by_limit_id ?? {});
   return quota.rate_limit?.limit_reached === true ||
     quota.secondary_rate_limit?.limit_reached === true ||
-    quota.code_review_rate_limit?.limit_reached === true;
+    quota.code_review_rate_limit?.limit_reached === true ||
+    modelLimits.some((limit) =>
+      limit.limit_reached === true || limit.secondary_rate_limit?.limit_reached === true
+    );
 }
 
 /**
