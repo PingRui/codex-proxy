@@ -1,4 +1,4 @@
-import { useEffect } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 import { APP_BRAND, APP_DESCRIPTOR } from "../../../shared/brand";
 import { useI18n, useT } from "../../../shared/i18n/context";
 import { NAV_ITEMS, type IconName } from "../navigation";
@@ -101,11 +101,43 @@ function SidebarPanel({ activeHash, uptimeSeconds, onClose }: { activeHash: stri
 
 export function Sidebar({ activeHash, unreadErrors = 0, uptimeSeconds = null, mobileOpen = false, onMobileClose }: { activeHash: string; unreadErrors?: number; uptimeSeconds?: number | null; mobileOpen?: boolean; onMobileClose?: () => void }) {
   const { t } = useI18n();
+  const mobileDrawerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!mobileOpen) return;
+
+    const drawer = mobileDrawerRef.current;
+    if (!drawer) return;
+    const getFocusable = () => Array.from(
+      drawer.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ),
+    );
+
+    getFocusable()[0]?.focus();
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onMobileClose?.();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onMobileClose?.();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -116,10 +148,21 @@ export function Sidebar({ activeHash, unreadErrors = 0, uptimeSeconds = null, mo
       <aside class="fixed inset-y-0 left-0 z-50 hidden w-60 flex-col border-r border-nx-border bg-sidebar lg:flex">
         <SidebarPanel activeHash={activeHash} unreadErrors={unreadErrors} uptimeSeconds={uptimeSeconds} />
       </aside>
-      {mobileOpen && <button class="fixed inset-0 z-[55] bg-black/55 lg:hidden" onClick={onMobileClose} aria-label={t("closeSidebar")} />}
-      <aside class={`fixed inset-y-0 left-0 z-[60] flex w-60 flex-col border-r border-nx-border bg-sidebar shadow-2xl transition-transform duration-200 lg:hidden ${mobileOpen ? "translate-x-0" : "pointer-events-none -translate-x-full"}`}>
-        <SidebarPanel activeHash={activeHash} unreadErrors={unreadErrors} uptimeSeconds={uptimeSeconds} onClose={onMobileClose} />
-      </aside>
+      {mobileOpen && (
+        <>
+          <button class="fixed inset-0 z-[55] bg-black/55 lg:hidden" onClick={onMobileClose} aria-label={t("closeSidebar")} />
+          <aside
+            id="mobile-navigation-drawer"
+            ref={mobileDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Primary navigation"
+            class="fixed inset-y-0 left-0 z-[60] flex w-60 flex-col border-r border-nx-border bg-sidebar shadow-2xl lg:hidden"
+          >
+            <SidebarPanel activeHash={activeHash} unreadErrors={unreadErrors} uptimeSeconds={uptimeSeconds} onClose={onMobileClose} />
+          </aside>
+        </>
+      )}
     </>
   );
 }

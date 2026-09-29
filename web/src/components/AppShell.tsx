@@ -1,4 +1,5 @@
 import type { ComponentChildren } from "preact";
+import { useEffect, useRef } from "preact/hooks";
 import { APP_BRAND } from "../../../shared/brand";
 import { useT } from "../../../shared/i18n/context";
 import { Sidebar } from "./Sidebar";
@@ -27,6 +28,15 @@ export function AppShell({
   footer,
 }: AppShellProps) {
   const t = useT();
+  const sidebarTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasSidebarOpenRef = useRef(mobileSidebarOpen);
+
+  useEffect(() => {
+    if (wasSidebarOpenRef.current && !mobileSidebarOpen) {
+      sidebarTriggerRef.current?.focus();
+    }
+    wasSidebarOpenRef.current = mobileSidebarOpen;
+  }, [mobileSidebarOpen]);
 
   return (
     <div class="min-h-screen bg-canvas text-ink">
@@ -41,10 +51,13 @@ export function AppShell({
       <div class="flex min-h-screen min-w-0 flex-col lg:pl-60">
         <header class="sticky top-0 z-40 flex h-14 shrink-0 items-center border-b border-nx-border bg-surface px-3 sm:px-5">
           <button
+            ref={sidebarTriggerRef}
             type="button"
             onClick={onOpenSidebar}
             class="mr-2 inline-flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface-raised hover:text-ink lg:hidden"
             aria-label={t("openSidebar")}
+            aria-expanded={mobileSidebarOpen}
+            aria-controls="mobile-navigation-drawer"
           >
             <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <path d="M4 6h16M4 12h16M4 18h16" />
