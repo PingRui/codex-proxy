@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, statSync } from "fs";
 import { resolve } from "path";
 import yaml from "js-yaml";
 
@@ -60,6 +60,19 @@ describe("electron-builder.yml", () => {
     expect(existsSync(resolve(PKG_DIR, config.win.icon))).toBe(true);
     expect(existsSync(resolve(PKG_DIR, config.mac.icon))).toBe(true);
     expect(existsSync(resolve(PKG_DIR, config.linux.icon))).toBe(true);
+  });
+
+  it("ships non-empty NEXORA icons for the desktop and web surfaces", () => {
+    const iconPaths = [
+      resolve(PKG_DIR, config.win.icon),
+      resolve(PKG_DIR, config.mac.icon),
+      resolve(ROOT_DIR, "web", "public", "icon.png"),
+    ];
+
+    for (const iconPath of iconPaths) {
+      expect(existsSync(iconPath), `Icon should exist at ${iconPath}`).toBe(true);
+      expect(statSync(iconPath).size, `Icon should not be empty at ${iconPath}`).toBeGreaterThan(0);
+    }
   });
 
   it("supports unsigned builds without Windows symlink privileges", () => {
