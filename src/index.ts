@@ -67,6 +67,7 @@ export interface ServerHandle {
 export interface StartOptions {
   host?: string;
   port?: number;
+  manualAccountMode?: boolean;
 }
 
 function urlHostForLocalRequest(host: string): string {
@@ -104,7 +105,9 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
   cleanupStaleLocks();
 
   // Initialize managers
-  const accountPool = new AccountPool();
+  const accountPool = new AccountPool({
+    routingMode: options?.manualAccountMode === true ? "manual" : "automatic",
+  });
   const refreshScheduler = new RefreshScheduler(accountPool);
   const cookieJar = new CookieJar();
   const proxyPool = new ProxyPool();

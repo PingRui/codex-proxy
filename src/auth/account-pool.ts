@@ -11,7 +11,7 @@ import { createFsPersistence } from "./account-persistence.js";
 import { AccountRegistry } from "./account-registry.js";
 import { AccountLifecycle } from "./account-lifecycle.js";
 import type { AccountPersistence, PersistenceLoadHealth } from "./account-persistence.js";
-import type { AccountCapacitySummary } from "./account-lifecycle.js";
+import type { AccountCapacitySummary, RoutingMode } from "./account-lifecycle.js";
 import type { CodexTokenMetadata } from "./token-metadata.js";
 import type { RotationStrategyName } from "./rotation-strategy.js";
 import type {
@@ -42,6 +42,7 @@ export class AccountPool {
     rotationStrategy?: RotationStrategyName;
     initialToken?: string | null;
     rateLimitBackoffSeconds?: number;
+    routingMode?: RoutingMode;
   }) {
     const persistence = options?.persistence ?? createFsPersistence();
 
@@ -71,7 +72,11 @@ export class AccountPool {
       persistDisabled: loaded.loadFailed === true,
       selectedAccountId: loaded.selectedAccountId ?? null,
     });
-    this.lifecycle = new AccountLifecycle(this.registry, strategyName);
+    this.lifecycle = new AccountLifecycle(
+      this.registry,
+      strategyName,
+      options?.routingMode ?? "automatic",
+    );
 
     // Override with initial token if set
     const initialToken =

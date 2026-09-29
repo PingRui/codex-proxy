@@ -590,4 +590,47 @@ describe("AccountPool", () => {
       });
     });
   });
+
+  describe("manual routing mode", () => {
+    it("acquires only the selected account and never falls back", () => {
+      const manualPool = new AccountPool({
+        routingMode: "manual",
+        rotationStrategy: "round_robin",
+        initialToken: null,
+        rateLimitBackoffSeconds: 60,
+      });
+      const accountA = manualPool.addAccount("manual-a-token");
+      const accountB = manualPool.addAccount("manual-b-token");
+
+      expect(manualPool.acquire()).toBeNull();
+      expect(manualPool.selectAccount(accountB)).toBe(true);
+      expect(manualPool.acquire()?.entryId).toBe(accountB);
+      expect(manualPool.acquire({ excludeIds: [accountB] })).toBeNull();
+
+      manualPool.markStatus(accountB, "expired");
+      expect(manualPool.acquire()).toBeNull();
+      expect(manualPool.getEntry(accountA)?.status).toBe("active");
+    });
+
+    it("keeps in-flight acquisitions bound to their original accounts", () => {
+      const manualPool = new AccountPool({
+        routingMode: "manual",
+        rotationStrategy: "least_used",
+        initialToken: null,
+        rateLimitBackoffSeconds: 60,
+      });
+      const accountA = manualPool.addAccount("flight-a-token");
+      const accountB = manualPool.addAccount("flight-b-token");
+
+      manualPool.selectAccount(accountA);
+      const acquiredA = manualPool.acquire();
+      manualPool.selectAccount(accountB);
+      const acquiredB = manualPool.acquire();
+
+      expect(acquiredA?.entryId).toBe(accountA);
+      expect(acquiredB?.entryId).toBe(accountB);
+      if (acquiredA) manualPool.release(acquiredA.entryId);
+      if (acquiredB) manualPool.release(acquiredB.entryId);
+    });
+  });
 });

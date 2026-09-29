@@ -23,16 +23,24 @@ export interface AccountCapacitySummary {
   available_slots: number;
 }
 
+export type RoutingMode = "automatic" | "manual";
+
 export class AccountLifecycle {
   /** Per-account active slot timestamps. Each entry = one in-flight request. */
   private acquireLocks: Map<string, number[]> = new Map();
   private strategy: RotationStrategy;
   private rotationState: RotationState = { roundRobinIndex: 0 };
   private registry: AccountRegistry;
+  private routingMode: RoutingMode;
 
-  constructor(registry: AccountRegistry, strategyName: RotationStrategyName) {
+  constructor(
+    registry: AccountRegistry,
+    strategyName: RotationStrategyName,
+    routingMode: RoutingMode = "automatic",
+  ) {
     this.registry = registry;
     this.strategy = getRotationStrategy(strategyName);
+    this.routingMode = routingMode;
   }
 
   private slotCount(entryId: string): number {
@@ -76,7 +84,9 @@ export class AccountLifecycle {
     const nowMs = Date.now();
     const now = new Date(nowMs);
 
-    const entries = this.registry.getAllEntries();
+    const entries = this.routingMode === "manual"
+      ? this.selectedEntries()
+      : this.registry.getAllEntries();
     for (const entry of entries) {
       this.registry.refreshStatus(entry, now);
     }
@@ -153,6 +163,13 @@ export class AccountLifecycle {
     };
   }
 
+  private selectedEntries(): AccountEntry[] {
+    const selectedId = this.registry.getSelectedAccountId();
+    if (!selectedId) return [];
+    const selected = this.registry.getEntry(selectedId);
+    return selected ? [selected] : [];
+  }
+
   release(
     entryId: string,
     usage?: {
@@ -198,7 +215,9 @@ export class AccountLifecycle {
     const config = getConfig();
     const maxConcurrent = config.auth.max_concurrent_per_account ?? 3;
     const skipExhausted = config.quota?.skip_exhausted === true;
-    const entries = this.registry.getAllEntries();
+    const entries = this.routingMode === "manual"
+      ? this.selectedEntries()
+      : this.registry.getAllEntries();
     for (const entry of entries) {
       this.registry.refreshStatus(entry, now);
     }
@@ -245,7 +264,9 @@ export class AccountLifecycle {
     const maxConcurrent = config.auth.max_concurrent_per_account ?? 3;
     const skipExhausted = config.quota?.skip_exhausted === true;
 
-    const entries = this.registry.getAllEntries();
+    const entries = this.routingMode === "manual"
+      ? this.selectedEntries()
+      : this.registry.getAllEntries();
     for (const entry of entries) {
       this.registry.refreshStatus(entry, now);
     }
