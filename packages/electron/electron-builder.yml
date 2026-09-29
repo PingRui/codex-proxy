@@ -41,6 +41,10 @@ extraResources:
       - "**/*"
 
 win:
+  # Keep unsigned local builds reproducible on Windows machines where creating
+  # the winCodeSign cache symlinks requires Developer Mode or elevation.
+  # Set this back to true when a production code-signing certificate is added.
+  signAndEditExecutable: false
   target:
     - target: nsis
       arch: [x64]

@@ -23,7 +23,11 @@ interface BuilderConfig {
   files: Array<string | { from: string; to: string; filter?: string[] }>;
   asarUnpack: string[];
   extraResources: Array<{ from: string; to: string; filter?: string[] }>;
-  win: { target: Array<{ target: string; arch: string[] }>; icon: string };
+  win: {
+    target: Array<{ target: string; arch: string[] }>;
+    icon: string;
+    signAndEditExecutable: boolean;
+  };
   mac: { target: Array<{ target: string; arch: string[] }>; icon: string };
   linux: { target: Array<{ target: string; arch: string[] }>; icon: string };
 }
@@ -54,6 +58,10 @@ describe("electron-builder.yml", () => {
     expect(existsSync(resolve(PKG_DIR, config.win.icon))).toBe(true);
     expect(existsSync(resolve(PKG_DIR, config.mac.icon))).toBe(true);
     expect(existsSync(resolve(PKG_DIR, config.linux.icon))).toBe(true);
+  });
+
+  it("supports unsigned builds without Windows symlink privileges", () => {
+    expect(config.win.signAndEditExecutable).toBe(false);
   });
 
   it("files list includes dist-electron bundle", () => {
