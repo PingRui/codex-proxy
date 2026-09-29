@@ -20,6 +20,7 @@ import type {
   AcquiredAccount,
   CodexFingerprintMode,
   CodexQuota,
+  OAuthCredentialSet,
 } from "./types.js";
 
 export interface PersistenceHealth {
@@ -68,6 +69,7 @@ export class AccountPool {
     }
     this.registry = new AccountRegistry(persistence, loaded.entries, {
       persistDisabled: loaded.loadFailed === true,
+      selectedAccountId: loaded.selectedAccountId ?? null,
     });
     this.lifecycle = new AccountLifecycle(this.registry, strategyName);
 
@@ -139,6 +141,27 @@ export class AccountPool {
     metadata?: Partial<CodexTokenMetadata>,
   ): string {
     return this.registry.addAccount(token, refreshToken, metadata);
+  }
+
+  addOAuthAccount(
+    credentials: OAuthCredentialSet,
+    metadata?: Partial<CodexTokenMetadata>,
+  ): string {
+    return this.registry.addOAuthAccount(credentials, metadata);
+  }
+
+  getSelectedAccountId(): string | null {
+    return this.registry.getSelectedAccountId();
+  }
+
+  selectAccount(entryId: string): boolean {
+    return this.registry.selectAccount(entryId);
+  }
+
+  updateOAuthCredentials(entryId: string, credentials: OAuthCredentialSet): boolean {
+    const updated = this.registry.updateOAuthCredentials(entryId, credentials);
+    if (updated) this.evictWsPool(entryId);
+    return updated;
   }
 
   async withPersistenceBatch<T>(fn: () => Promise<T>): Promise<T> {

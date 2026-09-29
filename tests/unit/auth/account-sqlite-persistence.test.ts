@@ -143,6 +143,29 @@ describe("SQLite account persistence", () => {
     expect(fallbackLoad.entries[0].label).toBe("After");
   });
 
+  it("persists the selected account and complete OAuth credentials", async () => {
+    const entry = {
+      ...makeEntry("selected"),
+      idToken: "id-token-selected",
+      lastRefresh: "2026-09-29T08:00:00.000Z",
+    };
+    const { createFsPersistence } = await freshModule();
+    const writer = createFsPersistence();
+    writer.load();
+
+    writer.save([entry], entry.id);
+
+    const loaded = createFsPersistence().load();
+    expect(loaded.selectedAccountId).toBe(entry.id);
+    expect(loaded.entries[0]).toMatchObject({
+      id: entry.id,
+      refreshToken: entry.refreshToken,
+      idToken: entry.idToken,
+      lastRefresh: entry.lastRefresh,
+    });
+    expect(readAccountsJson().selectedAccountId).toBe(entry.id);
+  });
+
   it("falls back to healthy accounts.json when SQLite is unavailable", async () => {
     const entry = makeEntry("fallback", "Fallback");
     writeAccountsJson([entry]);

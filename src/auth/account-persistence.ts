@@ -111,17 +111,19 @@ export interface PersistenceLoadHealth {
 export interface AccountPersistence {
   load(): {
     entries: AccountEntry[];
+    selectedAccountId?: string | null;
     needsPersist: boolean;
     loadFailed?: boolean;
     /** Populated when loadFailed=true so dashboard can show accurate recovery instructions. */
     health?: PersistenceLoadHealth;
   };
-  save(accounts: AccountEntry[]): void;
+  save(accounts: AccountEntry[], selectedAccountId?: string | null): void;
   readRefreshToken?(entryId: string): string | null;
 }
 
 interface PersistenceLoadResult {
   entries: AccountEntry[];
+  selectedAccountId?: string | null;
   needsPersist: boolean;
   loadFailed?: boolean;
   health?: PersistenceLoadHealth;
@@ -146,7 +148,7 @@ interface SqliteDatabase {
 type SqliteDatabaseConstructor = new (filename: string) => SqliteDatabase;
 
 type SqliteLoadResult =
-  | { ok: true; entries: AccountEntry[]; needsPersist: boolean }
+  | { ok: true; entries: AccountEntry[]; selectedAccountId: string | null; needsPersist: boolean }
   | { ok: false; error: unknown };
 
 type SqliteRefreshTokenResult =
@@ -190,10 +192,11 @@ export function createFsPersistence(): AccountPersistence {
           if (sqliteLoad.entries.length > 0 || !existsSync(getAccountsFile())) {
             activeBackend = "sqlite";
             if (sqliteLoad.needsPersist) {
-              persistence.save(sqliteLoad.entries);
+              persistence.save(sqliteLoad.entries, sqliteLoad.selectedAccountId);
             }
             return {
               entries: sqliteLoad.entries,
+              selectedAccountId: sqliteLoad.selectedAccountId,
               needsPersist: sqliteLoad.needsPersist,
             };
           }
@@ -201,22 +204,22 @@ export function createFsPersistence(): AccountPersistence {
           const jsonLoad = loadJsonOrQuarantine();
           if (jsonLoad.loadFailed) return jsonLoad;
           if (jsonLoad.entries.length > 0) {
-            if (tryPromoteJsonToSqlite(jsonLoad.entries)) {
+            if (tryPromoteJsonToSqlite(jsonLoad.entries, jsonLoad.selectedAccountId ?? null)) {
               activeBackend = "sqlite";
               if (jsonLoad.needsPersist) {
-                trySaveJsonMirror(jsonLoad.entries);
+                trySaveJsonMirror(jsonLoad.entries, jsonLoad.selectedAccountId);
               }
             } else {
               activeBackend = "json";
               if (jsonLoad.needsPersist) {
-                trySaveJsonMirror(jsonLoad.entries);
+                trySaveJsonMirror(jsonLoad.entries, jsonLoad.selectedAccountId);
               }
             }
             return jsonLoad;
           }
 
           activeBackend = "sqlite";
-          return { entries: [], needsPersist: false };
+          return { entries: [], selectedAccountId: null, needsPersist: false };
         }
 
         sqliteLoadError = sqliteLoad.error;
@@ -242,22 +245,22 @@ export function createFsPersistence(): AccountPersistence {
       }
 
       if (entries.length > 0) {
-        if (tryPromoteJsonToSqlite(entries)) {
+        if (tryPromoteJsonToSqlite(entries, jsonLoad.selectedAccountId ?? null)) {
           activeBackend = "sqlite";
           if (jsonLoad.needsPersist) {
-            trySaveJsonMirror(entries);
+            trySaveJsonMirror(entries, jsonLoad.selectedAccountId);
           }
         } else {
           activeBackend = "json";
           if (jsonLoad.needsPersist) {
-            trySaveJsonMirror(entries);
+            trySaveJsonMirror(entries, jsonLoad.selectedAccountId);
           }
         }
-        return { entries, needsPersist: jsonLoad.needsPersist };
+        return { entries, selectedAccountId: jsonLoad.selectedAccountId ?? null, needsPersist: jsonLoad.needsPersist };
       }
 
       activeBackend = "sqlite";
-      return { entries, needsPersist: jsonLoad.needsPersist };
+      return { entries, selectedAccountId: jsonLoad.selectedAccountId ?? null, needsPersist: jsonLoad.needsPersist };
 
       function loadJsonOrQuarantine(): PersistenceLoadResult {
         const loaded = loadPersisted();
@@ -270,7 +273,7 @@ export function createFsPersistence(): AccountPersistence {
       }
     },
 
-    save(accounts: AccountEntry[]): void {
+    save(accounts: AccountEntry[], selectedAccountId: string | null = null): void {
       if (quarantineActive) {
         const store = quarantineHealth?.store ?? "accounts.json";
         console.warn(
@@ -283,9 +286,9 @@ export function createFsPersistence(): AccountPersistence {
 
       if (activeBackend !== "json") {
         try {
-          saveSqliteAccounts(getAccountsSqliteFile(), accounts);
+          saveSqliteAccounts(getAccountsSqliteFile(), accounts, selectedAccountId);
           activeBackend = "sqlite";
-          trySaveJsonMirror(accounts);
+          trySaveJsonMirror(accounts, selectedAccountId);
           return;
         } catch (err) {
           console.warn(
@@ -296,7 +299,7 @@ export function createFsPersistence(): AccountPersistence {
         }
       }
 
-      trySaveJsonMirror(accounts);
+      trySaveJsonMirror(accounts, selectedAccountId);
     },
 
     readRefreshToken(entryId: string): string | null {
@@ -320,9 +323,9 @@ export function createFsPersistence(): AccountPersistence {
   return persistence;
 }
 
-function tryPromoteJsonToSqlite(entries: AccountEntry[]): boolean {
+function tryPromoteJsonToSqlite(entries: AccountEntry[], selectedAccountId: string | null = null): boolean {
   try {
-    saveSqliteAccounts(getAccountsSqliteFile(), entries);
+    saveSqliteAccounts(getAccountsSqliteFile(), entries, selectedAccountId);
     return true;
   } catch (err) {
     console.warn(
@@ -333,19 +336,19 @@ function tryPromoteJsonToSqlite(entries: AccountEntry[]): boolean {
   }
 }
 
-function trySaveJsonMirror(accounts: AccountEntry[]): void {
+function trySaveJsonMirror(accounts: AccountEntry[], selectedAccountId: string | null = null): void {
   try {
-    saveJsonAccounts(accounts);
+    saveJsonAccounts(accounts, selectedAccountId);
   } catch (err) {
     console.error("[AccountPool] Failed to persist accounts.json:", err instanceof Error ? err.message : err);
   }
 }
 
-function saveJsonAccounts(accounts: AccountEntry[]): void {
+function saveJsonAccounts(accounts: AccountEntry[], selectedAccountId: string | null = null): void {
   const accountsFile = getAccountsFile();
   const dir = dirname(accountsFile);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  const data: AccountsFile = { accounts };
+  const data: AccountsFile = { accounts, selectedAccountId };
   const tmpFile = accountsFile + ".tmp";
   writeFileSync(tmpFile, JSON.stringify(data, null, 2), "utf-8");
   renameSync(tmpFile, accountsFile);
@@ -404,10 +407,20 @@ function initSqliteSchema(db: SqliteDatabase): void {
       updated_at TEXT NOT NULL
     )
   `);
-  db.exec("PRAGMA user_version = 1");
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS account_state (
+      id INTEGER PRIMARY KEY,
+      selected_account_id TEXT
+    )
+  `);
+  db.exec("PRAGMA user_version = 2");
 }
 
-function saveSqliteAccounts(sqliteFile: string, accounts: AccountEntry[]): void {
+function saveSqliteAccounts(
+  sqliteFile: string,
+  accounts: AccountEntry[],
+  selectedAccountId: string | null = null,
+): void {
   const dir = dirname(sqliteFile);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
@@ -415,6 +428,10 @@ function saveSqliteAccounts(sqliteFile: string, accounts: AccountEntry[]): void 
   try {
     initSqliteSchema(db);
     const deleteAll = db.prepare("DELETE FROM accounts");
+    const deleteState = db.prepare("DELETE FROM account_state");
+    const insertState = db.prepare(
+      "INSERT INTO account_state (id, selected_account_id) VALUES (1, ?)",
+    );
     const insert = db.prepare(`
       INSERT INTO accounts (
         id,
@@ -451,6 +468,8 @@ function saveSqliteAccounts(sqliteFile: string, accounts: AccountEntry[]): void 
           updatedAt,
         );
       }
+      deleteState.run();
+      insertState.run(selectedAccountId);
       db.exec("COMMIT");
     } catch (err) {
       try {
@@ -478,7 +497,19 @@ function loadSqlitePersisted(sqliteFile: string): SqliteLoadResult {
         return JSON.parse(row.entry_json) as unknown;
       });
       const normalized = normalizeAccountEntries(rawEntries);
-      return { ok: true, ...normalized };
+      const stateRows = db
+        .prepare("SELECT selected_account_id FROM account_state WHERE id = 1 LIMIT 1")
+        .all();
+      const rawSelectedAccountId = stateRows.length > 0
+        ? (stateRows[0] as { selected_account_id?: unknown }).selected_account_id
+        : null;
+      const selected = normalizeSelectedAccountId(rawSelectedAccountId, normalized.entries);
+      return {
+        ok: true,
+        entries: normalized.entries,
+        selectedAccountId: selected.selectedAccountId,
+        needsPersist: normalized.needsPersist || selected.needsPersist,
+      };
     } finally {
       db.close();
     }
@@ -558,6 +589,14 @@ function normalizeAccountEntries(rawEntries: unknown[]): {
 
     if (entry.refreshToken === undefined) {
       entry.refreshToken = null;
+      needsPersist = true;
+    }
+    if (entry.idToken === undefined) {
+      entry.idToken = null;
+      needsPersist = true;
+    }
+    if (entry.lastRefresh === undefined) {
+      entry.lastRefresh = null;
       needsPersist = true;
     }
 
@@ -675,6 +714,22 @@ function normalizeAccountEntries(rawEntries: unknown[]): {
   return { entries, needsPersist };
 }
 
+function normalizeSelectedAccountId(
+  rawSelectedAccountId: unknown,
+  entries: AccountEntry[],
+): { selectedAccountId: string | null; needsPersist: boolean } {
+  if (rawSelectedAccountId === null) {
+    return { selectedAccountId: null, needsPersist: false };
+  }
+  if (typeof rawSelectedAccountId !== "string" || rawSelectedAccountId.length === 0) {
+    return { selectedAccountId: null, needsPersist: true };
+  }
+  if (!entries.some((entry) => entry.id === rawSelectedAccountId)) {
+    return { selectedAccountId: null, needsPersist: true };
+  }
+  return { selectedAccountId: rawSelectedAccountId, needsPersist: false };
+}
+
 function migrateFromLegacy(): AccountEntry[] {
   try {
     const accountsFile = getAccountsFile();
@@ -697,6 +752,8 @@ function migrateFromLegacy(): AccountEntry[] {
       id,
       token: data.token,
       refreshToken: null,
+      idToken: null,
+      lastRefresh: null,
       email: data.userInfo?.email ?? null,
       accountId: accountId,
       organizationId: null,
@@ -730,7 +787,7 @@ function migrateFromLegacy(): AccountEntry[] {
     // Write new format
     const dir = dirname(accountsFile);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    const accountsData: AccountsFile = { accounts: [entry] };
+    const accountsData: AccountsFile = { accounts: [entry], selectedAccountId: entry.id };
     writeFileSync(accountsFile, JSON.stringify(accountsData, null, 2), "utf-8");
 
     // Rename old file
@@ -745,7 +802,7 @@ function migrateFromLegacy(): AccountEntry[] {
 
 function loadPersisted(): PersistenceLoadResult {
   const accountsFile = getAccountsFile();
-  if (!existsSync(accountsFile)) return { entries: [], needsPersist: false };
+  if (!existsSync(accountsFile)) return { entries: [], selectedAccountId: null, needsPersist: false };
 
   let raw: string;
   try {
@@ -784,7 +841,13 @@ function loadPersisted(): PersistenceLoadResult {
   }
 
   try {
-    return normalizeAccountEntries(data.accounts);
+    const normalized = normalizeAccountEntries(data.accounts);
+    const selected = normalizeSelectedAccountId(data.selectedAccountId, normalized.entries);
+    return {
+      entries: normalized.entries,
+      selectedAccountId: selected.selectedAccountId,
+      needsPersist: normalized.needsPersist || selected.needsPersist,
+    };
   } catch (err) {
     // The per-entry migration/backfill loop threw. Treat as corruption.
     return quarantineCorruptFile(accountsFile, raw, err, "entry_processing_failed");

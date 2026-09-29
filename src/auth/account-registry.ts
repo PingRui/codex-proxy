@@ -21,6 +21,7 @@ import type {
   AccountInfo,
   CodexFingerprintMode,
   CodexQuota,
+  OAuthCredentialSet,
 } from "./types.js";
 import { hasReachedCachedQuota } from "./quota-skip.js";
 import { isCfChallengeCooldownActive } from "./cf-challenge-cooldown.js";
@@ -59,17 +60,21 @@ export class AccountRegistry {
   private persistDisabled: boolean;
   private persistBatchDepth = 0;
   private persistDirty = false;
+  private selectedAccountId: string | null;
 
   constructor(
     persistence: AccountPersistence,
     initialEntries: AccountEntry[],
-    options?: { persistDisabled?: boolean },
+    options?: { persistDisabled?: boolean; selectedAccountId?: string | null },
   ) {
     this.persistence = persistence;
     this.persistDisabled = options?.persistDisabled ?? false;
     for (const entry of initialEntries) {
       this.accounts.set(entry.id, entry);
     }
+    this.selectedAccountId = options?.selectedAccountId && this.accounts.has(options.selectedAccountId)
+      ? options.selectedAccountId
+      : null;
   }
 
   /**
@@ -103,6 +108,17 @@ export class AccountRegistry {
     refreshToken?: string | null,
     metadata?: Partial<CodexTokenMetadata>,
   ): string {
+    return this.addOAuthAccount(
+      { accessToken: token, refreshToken },
+      metadata,
+    );
+  }
+
+  addOAuthAccount(
+    credentials: OAuthCredentialSet,
+    metadata?: Partial<CodexTokenMetadata>,
+  ): string {
+    const token = credentials.accessToken;
     const tokenAccountId = extractChatGptAccountId(token);
     const profile = extractUserProfile(token);
     const accountId = tokenAccountId ?? metadata?.accountId ?? null;
@@ -130,8 +146,14 @@ export class AccountRegistry {
       if (!sameAccountUser && !sameOrganizationUser && existing.token !== token) continue;
 
       existing.token = token;
-      if (typeof refreshToken === "string" && refreshToken.length > 0) {
-        existing.refreshToken = refreshToken;
+      if (typeof credentials.refreshToken === "string" && credentials.refreshToken.length > 0) {
+        existing.refreshToken = credentials.refreshToken;
+      }
+      if (typeof credentials.idToken === "string" && credentials.idToken.length > 0) {
+        existing.idToken = credentials.idToken;
+      }
+      if (typeof credentials.lastRefresh === "string" && credentials.lastRefresh.length > 0) {
+        existing.lastRefresh = credentials.lastRefresh;
       }
       existing.email = email ?? existing.email;
       existing.accountId = accountId ?? existing.accountId;
@@ -148,7 +170,9 @@ export class AccountRegistry {
     const entry: AccountEntry = {
       id,
       token,
-      refreshToken: refreshToken ?? null,
+      refreshToken: credentials.refreshToken ?? null,
+      idToken: credentials.idToken ?? null,
+      lastRefresh: credentials.lastRefresh ?? null,
       email,
       accountId,
       organizationId,
@@ -185,21 +209,37 @@ export class AccountRegistry {
 
   removeAccount(id: string): boolean {
     const deleted = this.accounts.delete(id);
-    if (deleted) this.schedulePersist();
+    if (deleted) {
+      if (this.selectedAccountId === id) this.selectedAccountId = null;
+      this.schedulePersist();
+    }
     return deleted;
   }
 
   updateToken(entryId: string, newToken: string, refreshToken?: string): void {
-    const entry = this.accounts.get(entryId);
-    if (!entry) return;
+    this.updateOAuthCredentials(entryId, {
+      accessToken: newToken,
+      refreshToken,
+    });
+  }
 
-    entry.token = newToken;
+  updateOAuthCredentials(entryId: string, credentials: OAuthCredentialSet): boolean {
+    const entry = this.accounts.get(entryId);
+    if (!entry) return false;
+
+    entry.token = credentials.accessToken;
     // Never clear an existing RT — only replace with a new non-empty value
-    if (typeof refreshToken === "string" && refreshToken.length > 0) {
-      entry.refreshToken = refreshToken;
+    if (typeof credentials.refreshToken === "string" && credentials.refreshToken.length > 0) {
+      entry.refreshToken = credentials.refreshToken;
     }
-    const profile = extractUserProfile(newToken);
-    const accountId = extractChatGptAccountId(newToken);
+    if (typeof credentials.idToken === "string" && credentials.idToken.length > 0) {
+      entry.idToken = credentials.idToken;
+    }
+    if (typeof credentials.lastRefresh === "string" && credentials.lastRefresh.length > 0) {
+      entry.lastRefresh = credentials.lastRefresh;
+    }
+    const profile = extractUserProfile(credentials.accessToken);
+    const accountId = extractChatGptAccountId(credentials.accessToken);
     entry.email = profile?.email ?? entry.email;
     entry.planType = profile?.chatgpt_plan_type ?? entry.planType;
     entry.accountId = accountId ?? entry.accountId;
@@ -207,9 +247,25 @@ export class AccountRegistry {
     if (accountId) entry.accountIdSource = "access_token";
     // Don't reactivate manually disabled or banned accounts
     if (entry.status !== "disabled" && entry.status !== "banned") {
-      entry.status = isTokenExpired(newToken) ? "expired" : "active";
+      entry.status = isTokenExpired(credentials.accessToken) ? "expired" : "active";
     }
     this.persistNow();
+    return true;
+  }
+
+  getSelectedAccountId(): string | null {
+    return this.selectedAccountId;
+  }
+
+  selectAccount(entryId: string): boolean {
+    if (this.persistDisabled) return false;
+    const entry = this.accounts.get(entryId);
+    if (!entry) return false;
+    this.refreshStatus(entry, new Date());
+    if (entry.status !== "active" || hasReachedCachedQuota(entry)) return false;
+    this.selectedAccountId = entryId;
+    this.persistNow();
+    return true;
   }
 
   /**
@@ -465,6 +521,7 @@ export class AccountRegistry {
 
   clearToken(): void {
     this.accounts.clear();
+    this.selectedAccountId = null;
     this.persistNow();
   }
 
@@ -776,7 +833,7 @@ export class AccountRegistry {
       this.persistDirty = true;
       return;
     }
-    this.persistence.save([...this.accounts.values()]);
+    this.persistence.save([...this.accounts.values()], this.selectedAccountId);
   }
 
   destroy(): void {

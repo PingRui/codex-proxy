@@ -551,4 +551,43 @@ describe("AccountPool", () => {
       expect(distinct.length).toBe(2);
     });
   });
+
+  describe("desktop OAuth account state", () => {
+    it("retains complete OAuth credentials and selects an active account", () => {
+      const id = pool.addOAuthAccount({
+        accessToken: "token-oauth-account",
+        refreshToken: "refresh-oauth-account",
+        idToken: "id-oauth-account",
+        lastRefresh: "2026-09-29T08:00:00.000Z",
+      });
+
+      expect(pool.selectAccount(id)).toBe(true);
+      expect(pool.getSelectedAccountId()).toBe(id);
+      expect(pool.getEntry(id)).toMatchObject({
+        token: "token-oauth-account",
+        refreshToken: "refresh-oauth-account",
+        idToken: "id-oauth-account",
+        lastRefresh: "2026-09-29T08:00:00.000Z",
+      });
+    });
+
+    it("preserves refresh and ID tokens when a refresh response omits them", () => {
+      const id = pool.addOAuthAccount({
+        accessToken: "token-before-refresh",
+        refreshToken: "refresh-stable",
+        idToken: "id-stable",
+      });
+
+      expect(pool.updateOAuthCredentials(id, {
+        accessToken: "token-after-refresh",
+        lastRefresh: "2026-09-29T09:00:00.000Z",
+      })).toBe(true);
+      expect(pool.getEntry(id)).toMatchObject({
+        token: "token-after-refresh",
+        refreshToken: "refresh-stable",
+        idToken: "id-stable",
+        lastRefresh: "2026-09-29T09:00:00.000Z",
+      });
+    });
+  });
 });

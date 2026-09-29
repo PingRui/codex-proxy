@@ -64,6 +64,10 @@ export interface AccountEntry {
   id: string;
   token: string;
   refreshToken: string | null;
+  /** OAuth ID token used when synchronizing the selected account to Codex Desktop. */
+  idToken?: string | null;
+  /** ISO timestamp of the most recent successful OAuth token exchange or refresh. */
+  lastRefresh?: string | null;
   email: string | null;
   accountId: string | null;
   /** OpenAI organization identity. Never send this as ChatGPT-Account-Id. */
@@ -173,7 +177,16 @@ export interface AcquiredAccount {
   prevSlotMs: number | null;
 }
 
+/** Complete OAuth credential set retained for desktop account switching. */
+export interface OAuthCredentialSet {
+  accessToken: string;
+  refreshToken?: string | null;
+  idToken?: string | null;
+  lastRefresh?: string | null;
+}
+
 /** Persistence format */
 export interface AccountsFile {
   accounts: AccountEntry[];
+  selectedAccountId?: string | null;
 }
