@@ -40,7 +40,7 @@ export function ApiAccessPage(props: ApiAccessPageProps) {
         apiKeyRevealed={apiKeyRevealed}
       />
 
-      <details class="border-y border-nx-border py-4">
+      <details class="nx-disclosure">
         <summary class="cursor-pointer list-none text-sm font-semibold text-ink marker:hidden">
           {t("advancedProtocolCompatibility")}
           <span class="ml-3 text-xs font-normal text-muted">{t("advancedProtocolCompatibilityHint")}</span>

@@ -147,7 +147,7 @@ describe("AccountList", () => {
     renderAccountList([makeAccount("active-1", "active")]);
 
     const refresh = screen.getByRole("button", { name: "refreshList" });
-    const health = screen.getByRole("button", { name: "healthCheck" });
+    const health = screen.getByRole("button", { name: "healthCheck", hidden: true });
     expect(refresh.getAttribute("aria-label")).toBe("refreshList");
     expect(health.getAttribute("aria-label")).toBe("healthCheck");
     expect(refresh.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");

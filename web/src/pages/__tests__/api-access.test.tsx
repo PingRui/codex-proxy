@@ -35,12 +35,13 @@ describe("ApiAccessPage", () => {
     render(<I18nProvider><ApiAccessPage {...props} /></I18nProvider>);
 
     expect(screen.getByText("OpenAI-compatible connection")).toBeTruthy();
-    expect(screen.getByText("/v1/chat/completions")).toBeTruthy();
-    expect(screen.getByText("/v1/responses")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Chat Completions" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Responses" })).toBeTruthy();
     expect(screen.getByText("/v1/images/generations")).toBeTruthy();
-    expect(screen.getByDisplayValue("gpt-image-2")).toBeTruthy();
-    expect(screen.getByDisplayValue("A cinematic orbital gateway above a blue planet")).toBeTruthy();
-    expect(screen.getByDisplayValue("1024x1024")).toBeTruthy();
+    expect(screen.getByRole("tabpanel").textContent).toContain("gpt-image-2");
+    expect(screen.getByRole("tabpanel").textContent).toContain("A cinematic orbital gateway above a blue planet");
+    expect(screen.getByRole("tabpanel").textContent).toContain("1024x1024");
+    expect(screen.queryByDisplayValue("1024x1024")).toBeNull();
     expect(screen.getByRole("button", { name: /copy curl/i })).toBeTruthy();
 
     const advanced = screen.getByText("Advanced protocol compatibility").closest("details");

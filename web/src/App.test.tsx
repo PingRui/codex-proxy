@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("NEXORA workspace shell", () => {
-  it("shows only the six normal-workflow destinations without promotion", () => {
+  it("separates the four workflow destinations from utilities without promotion", () => {
     render(
       <I18nProvider>
         <Sidebar activeHash="" />
@@ -26,9 +26,9 @@ describe("NEXORA workspace shell", () => {
       "Accounts",
       "API Access",
       "Activity",
-      "Settings",
-      "About",
     ]);
+    const utilities = screen.getAllByRole("navigation", { name: "Utility navigation" })[0];
+    expect(within(utilities).getAllByRole("link").map((link) => link.textContent?.trim())).toEqual(["Settings", "About"]);
     expect(screen.queryByText(/Star on GitHub/i)).toBeNull();
   });
 

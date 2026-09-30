@@ -23,7 +23,7 @@ export function GatewayOverview({ accounts, status, onAddAccount }: GatewayOverv
       <PageHeader
         title={t("overview")}
         description={t("gatewayOverviewDescription")}
-        actions={(
+        actions={accounts.list.length === 0 ? (
           <button
             type="button"
             onClick={onAddAccount}
@@ -34,7 +34,7 @@ export function GatewayOverview({ accounts, status, onAddAccount }: GatewayOverv
             </svg>
             {t("addAccount")}
           </button>
-        )}
+        ) : undefined}
       />
 
       <CurrentGatewayAccount state={gatewayState} loading={accounts.loading} />

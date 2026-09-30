@@ -44,20 +44,18 @@ export function CurrentGatewayAccount({ state, loading = false }: CurrentGateway
   const actionKey = state.action ? actionLabel[state.action] : undefined;
 
   return (
-    <section class="relative min-h-[224px] overflow-hidden rounded-xl border border-nx-border bg-surface" aria-live="polite">
-      <div class={`absolute inset-y-0 left-0 w-1 ${loading ? "bg-muted" : stateTone[state.kind]}`} />
-      <div class="flex h-full flex-col px-6 py-6 sm:px-8 sm:py-7">
+    <section class="rounded-xl border border-nx-border bg-surface" aria-live="polite">
+      <div class="flex flex-col p-5 sm:p-6">
         <div class="flex items-center gap-2 text-xs font-medium text-muted">
           <span aria-hidden="true" class={`size-2 rounded-full ${loading ? "bg-muted" : stateTone[state.kind]}`} />
-          {t("gatewaySource")}
+          {title}
         </div>
 
-        <div class="mt-7 flex flex-1 flex-col justify-between gap-7 md:flex-row md:items-end">
+        <div class="mt-4 flex flex-col justify-between gap-5 md:flex-row md:items-center">
           <div class="min-w-0">
-            <h2 class="text-xl font-semibold tracking-[-0.025em] text-ink sm:text-2xl">{title}</h2>
             {account ? (
-              <div class="mt-5 flex min-w-0 items-center gap-4">
-                <div class="flex size-14 shrink-0 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 text-xl font-semibold text-accent">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-canvas text-lg font-semibold text-muted">
                   {initial}
                 </div>
                 <div class="min-w-0">
@@ -71,7 +69,7 @@ export function CurrentGatewayAccount({ state, loading = false }: CurrentGateway
                 </div>
               </div>
             ) : (
-              <p class="mt-3 max-w-xl text-sm leading-6 text-muted">{t("gatewayOverviewDescription")}</p>
+              <p class="max-w-xl text-sm leading-6 text-muted">{t("accountsGatewayDescription")}</p>
             )}
           </div>
 

@@ -89,19 +89,13 @@ export function GatewayConnectionCard({ baseUrl, apiKey, selectedModel, ready }:
         <ConnectionValue label={t("apiKeyLabel")} value={apiKeyAvailable ? maskSecret(apiKey) : ""} copyValue={apiKey} copyTitle="copyApiKey" available={apiKeyAvailable} />
       </div>
 
-      <div class="border-t border-nx-border px-5 py-4">
-        <div class="mb-3 text-xs text-muted">{t("gatewayCapabilities")}</div>
-        <div class="grid gap-px overflow-hidden rounded-lg border border-nx-border bg-nx-border sm:grid-cols-3">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-t border-nx-border px-5 py-4">
+        <div class="flex flex-wrap gap-x-4 gap-y-2">
           {capabilities.map((capability) => (
-            <div key={capability.path} class="bg-surface-raised px-3 py-3">
-              <div class="flex items-center gap-2 text-xs font-medium text-ink">
-                <span aria-hidden="true" class={`size-1.5 rounded-full ${connectionReady ? "bg-success" : "bg-muted"}`} />
-                {capability.label}
-              </div>
-              <code class="mt-1.5 block truncate text-[10px] text-muted">{capability.path}</code>
-            </div>
+            <span key={capability.path} class="text-xs text-muted" title={capability.path}>{capability.label}</span>
           ))}
         </div>
+        <a href="#/api" class="nx-button">{t("apiAccess")}</a>
       </div>
     </section>
   );

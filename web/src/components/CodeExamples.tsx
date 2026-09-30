@@ -62,6 +62,7 @@ export function CodeExamples({ baseUrl, apiKey, model, reasoningEffort, serviceT
   const t = useT();
   const [protocol, setProtocol] = useState<Protocol>("images");
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const root = apiRoot(baseUrl);
   const selectedModel = useMemo(() => displayModel(model, reasoningEffort, serviceTier), [model, reasoningEffort, serviceTier]);
   const visibleKey = apiKeyRevealed ? apiKey : "<LOCAL_API_KEY>";
@@ -69,9 +70,10 @@ export function CodeExamples({ baseUrl, apiKey, model, reasoningEffort, serviceT
   const copyCurl = useMemo(() => buildCurl(protocol, root, apiKey, selectedModel), [apiKey, protocol, root, selectedModel]);
 
   const handleCopy = useCallback(async () => {
-    await clipboardCopy(copyCurl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const ok = await clipboardCopy(copyCurl);
+    setCopied(ok);
+    setCopyFailed(!ok);
+    setTimeout(() => { setCopied(false); setCopyFailed(false); }, 2000);
   }, [copyCurl]);
 
   const protocols: Array<{ id: Protocol; label: string; path: string }> = [
@@ -81,33 +83,32 @@ export function CodeExamples({ baseUrl, apiKey, model, reasoningEffort, serviceT
   ];
 
   return (
-    <section class="border border-nx-border bg-surface">
-      <div class="grid gap-px bg-nx-border sm:grid-cols-3">
+    <section class="overflow-hidden rounded-xl border border-nx-border bg-surface">
+      <div role="tablist" aria-label={t("protocolExample")} class="flex border-b border-nx-border">
         {protocols.map((item) => (
-          <button type="button" key={item.id} onClick={() => setProtocol(item.id)} class={`border-b-2 bg-surface px-4 py-3 text-left ${protocol === item.id ? "border-accent text-accent-strong" : "border-transparent text-muted hover:text-ink"}`}>
-            <span class="block text-xs font-semibold">{item.label}</span>
-            <code class="mt-1 block text-[11px]">{item.path}</code>
+          <button type="button" role="tab" tabIndex={protocol === item.id ? 0 : -1} aria-selected={protocol === item.id} id={`protocol-${item.id}`} aria-controls="protocol-example" key={item.id} onClick={() => setProtocol(item.id)} onKeyDown={(event) => {
+            const index = protocols.findIndex((entry) => entry.id === item.id);
+            const next = event.key === "ArrowRight" ? (index + 1) % protocols.length : event.key === "ArrowLeft" ? (index + protocols.length - 1) % protocols.length : event.key === "Home" ? 0 : event.key === "End" ? protocols.length - 1 : -1;
+            if (next < 0) return;
+            event.preventDefault();
+            setProtocol(protocols[next].id);
+            document.getElementById(`protocol-${protocols[next].id}`)?.focus();
+          }} class={`min-w-0 flex-1 border-b-2 px-3 py-3 text-sm font-medium ${protocol === item.id ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}>
+            {item.label}
           </button>
         ))}
       </div>
 
-      <div class="px-5 py-5">
+      <div role="tabpanel" id="protocol-example" aria-labelledby={`protocol-${protocol}`} class="px-5 py-5">
         <div class="flex items-center justify-between gap-4">
-          <h2 class="text-sm font-semibold text-ink">{t("protocolExample")}</h2>
-          <button type="button" onClick={handleCopy} aria-label={t("copyCurl")} class="border border-nx-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">
+          <code class="min-w-0 break-all text-xs text-muted">{protocols.find((item) => item.id === protocol)?.path}</code>
+          <button type="button" onClick={handleCopy} disabled={!baseUrl || baseUrl === "Loading..." || !apiKey || apiKey === "Loading..."} aria-label={t("copyCurl")} class="nx-button shrink-0">
             {copied ? t("copied") : t("copyCurl")}
           </button>
         </div>
 
-        {protocol === "images" && (
-          <div class="mt-4 grid gap-px border border-nx-border bg-nx-border md:grid-cols-[0.7fr_2fr_0.7fr]">
-            <label class="bg-canvas px-3 py-2.5 text-xs text-muted">{t("requestModel")}<input readOnly value={IMAGE_MODEL} class="mt-1 block w-full border-0 bg-transparent p-0 font-mono text-xs text-ink outline-none" /></label>
-            <label class="bg-canvas px-3 py-2.5 text-xs text-muted">{t("requestPrompt")}<input readOnly value={IMAGE_PROMPT} class="mt-1 block w-full border-0 bg-transparent p-0 text-xs text-ink outline-none" /></label>
-            <label class="bg-canvas px-3 py-2.5 text-xs text-muted">{t("requestSize")}<input readOnly value={IMAGE_SIZE} class="mt-1 block w-full border-0 bg-transparent p-0 font-mono text-xs text-ink outline-none" /></label>
-          </div>
-        )}
-
-        <pre class="mt-4 overflow-x-auto border border-nx-border bg-canvas p-4 text-xs leading-5 text-ink"><code>{visibleCurl}</code></pre>
+        {copyFailed && <p role="status" class="mt-2 text-xs text-danger">{t("copyFailed")}</p>}
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-canvas p-4 text-xs leading-6 text-ink"><code>{visibleCurl}</code></pre>
       </div>
     </section>
   );

@@ -145,6 +145,7 @@ function Dashboard() {
 
   const toolbar = (
     <Header
+      simplified
       onAddAccount={accounts.startAdd}
       onCheckUpdate={update.checkForUpdate}
       onOpenUpdateModal={() => setShowModal(true)}

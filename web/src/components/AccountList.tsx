@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "preact/hooks";
 import { useI18n, useT } from "../../../shared/i18n/context";
-import { AccountCard } from "./AccountCard";
+import { AccountRow } from "./AccountRow";
 import { AccountBulkActions } from "./AccountBulkActions";
 import { AccountImportExport } from "./AccountImportExport";
 import { FallbackUpstreamCard } from "./FallbackUpstreamCard";
@@ -249,7 +249,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
       )
     : null;
 
-  const activeCount = accounts.filter((a) => a.status === "active").length;
+  const activeCount = accounts.filter((a) => derivedStatus(a) === "active").length;
 
   const isInvalid = (a: Account) => a.status === "expired" || a.status === "banned";
   const invalidCount = accounts.filter(isInvalid).length;
@@ -260,13 +260,11 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
       {/* Row 1: Title + stats */}
       <div class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
-          <h2 class="text-[0.95rem] font-bold tracking-tight">{t("connectedAccounts")}</h2>
-          <p class="text-slate-500 dark:text-text-dim text-[0.8rem]">{t("connectedAccountsDesc")}</p>
+          <span class="text-xs text-muted">{t("connectedAccounts")} · {accounts.length}</span>
         </div>
         <div class="flex flex-col items-end gap-1 shrink-0">
           <span class="text-[0.82rem] font-semibold">
-            <span class="text-primary">{activeCount}</span>
-            <span class="text-slate-400 dark:text-text-dim"> / {accounts.length}</span>
+            <span class="text-success">{t("active")} · {activeCount}</span>
           </span>
           {updatedAtText && (
             <span class="text-[0.7rem] text-slate-400 dark:text-text-dim">
@@ -289,18 +287,6 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
           <span class="hidden sm:inline">{t("refreshList")}</span>
-        </button>
-        {/* Health check (batch token refresh) */}
-        <button
-          onClick={runHealthCheck}
-          disabled={healthChecking}
-          class={accountToolbarControlClass}
-          aria-label={healthChecking ? t("healthChecking") : t("healthCheck")}
-        >
-          <svg aria-hidden="true" class={`size-3.5 ${healthChecking ? "animate-pulse" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-          </svg>
-          <span class="hidden sm:inline">{healthChecking ? t("healthChecking") : t("healthCheck")}</span>
         </button>
         {/* Status filter dropdown */}
         <select
@@ -343,13 +329,17 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
       <details
         open={maintenanceOpen}
         onToggle={(event) => setMaintenanceOpen(event.currentTarget.open)}
-        class="border-y border-nx-border py-3"
+        class="nx-disclosure order-last"
       >
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-ink marker:hidden">
           <span>{t("accountMaintenance")}</span>
           <span class="text-xs font-normal text-muted">{t("accountMaintenanceHint")}</span>
         </summary>
         <div class="mt-3 flex flex-wrap items-center gap-2">
+          <button onClick={runHealthCheck} disabled={healthChecking} class={accountToolbarControlClass} aria-label={healthChecking ? t("healthChecking") : t("healthCheck")}>
+            <svg aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 21S3 15 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 7-9 13-9 13Z" /></svg>
+            {healthChecking ? t("healthChecking") : t("healthCheck")}
+          </button>
           {onExport && onImport && (
             <AccountImportExport onExport={onExport} onImport={onImport} selectedIds={selectedIds} />
           )}
@@ -435,7 +425,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </span>
         </div>
       )}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="flex flex-col overflow-hidden rounded-xl border border-nx-border bg-surface">
         {loading ? (
           <div class="md:col-span-2 text-center py-8 text-slate-400 dark:text-text-dim text-sm bg-white dark:bg-card-dark border border-gray-200 dark:border-border-dark rounded-xl transition-colors">
             {t("loadingAccounts")}
@@ -446,7 +436,7 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </div>
         ) : (
           displayAccounts.slice(0, visibleCount).map((acct, i) => (
-            <AccountCard key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={maintenanceOpen && selectedIds.has(acct.id)} onToggleSelect={maintenanceOpen ? toggleSelect : undefined} currentAccount={manualMode && selectedAccountId === acct.id} selectingAccount={manualMode && selectingAccountId === acct.id} selectionBusy={manualMode && selectingAccountId !== null} onSelectAccount={manualMode ? onSelectAccount : undefined} onRefreshQuota={async (id) => {
+            <AccountRow key={acct.id} account={acct} index={i} onDelete={onDelete} proxies={proxies} onProxyChange={onProxyChange} selected={maintenanceOpen && selectedIds.has(acct.id)} onToggleSelect={maintenanceOpen ? toggleSelect : undefined} currentAccount={manualMode && selectedAccountId === acct.id} selectingAccount={manualMode && selectingAccountId === acct.id} selectionBusy={manualMode && selectingAccountId !== null} onSelectAccount={manualMode ? onSelectAccount : undefined} onRefreshQuota={async (id) => {
               const encoded = encodeURIComponent(id);
               const resp = await fetch(`/auth/accounts/${encoded}/quota`);
               if (!resp.ok) {

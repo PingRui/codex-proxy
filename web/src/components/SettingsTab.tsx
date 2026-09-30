@@ -26,16 +26,9 @@ export function SettingsTab({ models }: SettingsTabProps) {
   const { lang, setLang } = useI18n();
   const { isDark, toggle } = useTheme();
 
-  const desktopRows = [
-    { label: t("startup"), value: t("startupManual") },
-    { label: t("updates"), value: t("updatesToolbarHint") },
-    { label: t("codexAuthPath"), value: "~/.codex/auth.json" },
-    { label: t("dataLocation"), value: "data/" },
-  ];
-
   return (
     <div class="flex flex-col gap-6">
-      <section class="border border-nx-border bg-surface">
+      <section class="overflow-hidden rounded-xl border border-nx-border bg-surface">
         <div class="border-b border-nx-border px-5 py-4">
           <h2 class="text-base font-semibold text-ink">{t("appearanceAndLanguage")}</h2>
           <p class="mt-1 text-xs text-muted">{t("appearanceAndLanguageHint")}</p>
@@ -43,54 +36,41 @@ export function SettingsTab({ models }: SettingsTabProps) {
         <div class="grid gap-px bg-nx-border sm:grid-cols-2">
           <div class="bg-surface px-5 py-4">
             <div class="text-xs font-medium text-muted">{t("appearance")}</div>
-            <button type="button" onClick={toggle} class="mt-2 border border-nx-border bg-canvas px-3 py-2 text-sm font-medium text-ink hover:border-accent">
+            <button type="button" onClick={toggle} class="nx-button mt-2" aria-label={t("toggleTheme")}>
               {isDark ? t("darkTheme") : t("lightTheme")}
             </button>
           </div>
           <label class="bg-surface px-5 py-4">
             <span class="text-xs font-medium text-muted">{t("language")}</span>
-            <select value={lang} onChange={(event) => setLang(event.currentTarget.value as LangCode)} class="mt-2 block w-full border border-nx-border bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-accent">
+            <select value={lang} onChange={(event) => setLang(event.currentTarget.value as LangCode)} class="mt-2 block w-full rounded-lg border border-nx-border bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-accent">
               {LANGUAGES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
             </select>
           </label>
         </div>
       </section>
 
-      <section class="border border-nx-border bg-surface">
-        <div class="border-b border-nx-border px-5 py-4">
-          <h2 class="text-base font-semibold text-ink">{t("desktopRuntime")}</h2>
-          <p class="mt-1 text-xs text-muted">{t("desktopRuntimeHint")}</p>
-        </div>
-        <dl class="divide-y divide-nx-border px-5">
-          {desktopRows.map((row) => (
-            <div key={row.label} class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <dt class="text-sm font-medium text-ink">{row.label}</dt>
-              <dd class="font-mono text-xs text-muted">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      <p class="max-w-2xl text-sm leading-6 text-muted">{t("codexSyncGuidance")}</p>
 
-      <details class="border-y border-nx-border py-4">
-        <summary class="cursor-pointer list-none text-sm font-semibold text-ink marker:hidden">
-          {t("advanced")}
-          <span class="ml-3 text-xs font-normal text-muted">{t("advancedSettingsHint")}</span>
-        </summary>
-        <div class="mt-5 flex flex-col gap-5">
-          <nav aria-label={t("advanced")} class="grid gap-px border border-nx-border bg-nx-border sm:grid-cols-3">
-            <a href="#/api-keys" class="bg-surface px-4 py-3 text-sm font-medium text-ink hover:text-accent">{t("providerApiKeys")}</a>
-            <a href="#/proxies" class="bg-surface px-4 py-3 text-sm font-medium text-ink hover:text-accent">{t("proxyPool")}</a>
-            <a href="#/client-keys" class="bg-surface px-4 py-3 text-sm font-medium text-ink hover:text-accent">{t("clientKeys")}</a>
+      <div>
+        <details class="nx-disclosure"><summary>{t("connectionSettings")}</summary><div class="mt-5 space-y-5">
+          <nav aria-label={t("connectionSettings")} class="flex flex-wrap gap-2">
+            <a href="#/api-keys" class="nx-button">{t("providerApiKeys")}</a>
+            <a href="#/proxies" class="nx-button">{t("proxyPool")}</a>
+            <a href="#/client-keys" class="nx-button">{t("clientKeys")}</a>
           </nav>
           <SettingsPanel />
-          <GeneralSettings />
-          <ModelAliasSettings models={models} />
-          <QuotaSettings />
+        </div></details>
+        <details class="nx-disclosure"><summary>{t("routingSettings")}</summary><div class="mt-5 space-y-5">
           <RotationSettings />
-          <LogsSettings />
+          <ModelAliasSettings models={models} />
           <OllamaBridgeSettings />
-        </div>
-      </details>
+        </div></details>
+        <details class="nx-disclosure"><summary>{t("monitoringSettings")}</summary><div class="mt-5 space-y-5">
+          <QuotaSettings />
+          <LogsSettings />
+        </div></details>
+        <details class="nx-disclosure"><summary>{t("advanced")}</summary><div class="mt-5"><GeneralSettings /></div></details>
+      </div>
     </div>
   );
 }

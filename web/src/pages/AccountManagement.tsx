@@ -37,6 +37,8 @@ export function AccountManagement({ accounts, onAddAccount }: AccountManagementP
         </div>
       )}
 
+      {accounts.manualMode === false && accounts.list.length > 0 && <p class="mb-5 text-sm text-muted">{t("automaticRoutingHint")} <a href="#/settings" class="text-accent underline underline-offset-4">{t("settings")}</a></p>}
+
       <AccountList
         accounts={accounts.list}
         loading={accounts.loading}

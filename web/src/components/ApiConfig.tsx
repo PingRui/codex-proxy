@@ -75,7 +75,7 @@ export function ApiConfig({
   }, [modelFamilies, onEffortChange, onModelChange, selectedEffort]);
 
   return (
-    <section class="border border-nx-border bg-surface">
+    <section class="overflow-hidden rounded-xl border border-nx-border bg-surface">
       <div class="border-b border-nx-border px-5 py-4">
         <h2 class="text-base font-semibold tracking-[-0.02em] text-ink">{t("openAiCompatibleConnection")}</h2>
         <p class="mt-1 text-xs leading-5 text-muted">{t("openAiCompatibleConnectionHint")}</p>
@@ -86,7 +86,7 @@ export function ApiConfig({
           <span class="text-xs font-medium text-muted">{t("baseProxyUrl")}</span>
           <span class="mt-2 flex min-w-0 items-center gap-2">
             <input aria-label={t("baseProxyUrl")} class="min-w-0 flex-1 border-0 bg-transparent p-0 font-mono text-[13px] font-medium text-ink outline-none" type="text" value={baseUrl} readOnly />
-            <CopyButton getText={getBaseUrl} titleKey="copyUrl" />
+            <CopyButton getText={getBaseUrl} titleKey="copyUrl" disabled={!baseUrl || baseUrl === "Loading..."} />
           </span>
         </label>
 
@@ -100,17 +100,19 @@ export function ApiConfig({
 
       <div class="border-t border-nx-border px-5 py-4">
         <label class="text-xs font-medium text-muted" for="local-api-key">{t("localApiKey")}</label>
-        <div class="mt-2 flex min-w-0 items-center gap-2">
+        <div class="mt-2 flex min-w-0 flex-wrap items-center gap-2">
           <input id="local-api-key" aria-label={t("localApiKey")} type="text" readOnly value={keyRevealed ? apiKey : maskApiKey(apiKey)} class="min-w-0 flex-1 border border-nx-border bg-canvas px-3 py-2 font-mono text-[13px] text-ink outline-none" />
-          <button type="button" onClick={() => setKeyRevealed(!keyRevealed)} class="h-9 border border-nx-border bg-surface px-3 text-xs font-semibold text-ink hover:bg-canvas" aria-label={keyRevealed ? t("hideApiKey") : t("revealApiKey")}>
+          <button type="button" onClick={() => setKeyRevealed(!keyRevealed)} disabled={!apiKey || apiKey === "Loading..."} class="nx-button" aria-label={keyRevealed ? t("hideApiKey") : t("revealApiKey")}>
             {keyRevealed ? t("hideApiKey") : t("revealApiKey")}
           </button>
-          <CopyButton getText={getApiKey} titleKey="copyApiKey" />
+          <CopyButton getText={getApiKey} titleKey="copyApiKey" disabled={!apiKey || apiKey === "Loading..."} />
         </div>
       </div>
 
       {(efforts.length > 1 || selectedSpeed !== undefined) && (
-        <div class="flex flex-wrap items-center gap-2 border-t border-nx-border px-5 py-3">
+        <details class="nx-disclosure mx-5">
+          <summary>{t("requestOptions")}</summary>
+          <div class="mt-4 flex flex-wrap items-center gap-2">
           {efforts.length > 1 && efforts.map((effort) => (
             <button type="button" key={effort.reasoningEffort} onClick={() => onEffortChange(effort.reasoningEffort)} title={effort.description} class={`border px-2.5 py-1 text-xs font-medium ${selectedEffort === effort.reasoningEffort ? "border-accent bg-accent-soft text-accent-strong" : "border-nx-border text-muted hover:text-ink"}`}>
               {EFFORT_LABELS[effort.reasoningEffort] ?? effort.reasoningEffort}
@@ -119,7 +121,8 @@ export function ApiConfig({
           <span class="ml-auto text-xs text-muted">{t("speed")}</span>
           <button type="button" onClick={() => onSpeedChange(null)} class={`border px-2.5 py-1 text-xs font-medium ${selectedSpeed === null ? "border-accent bg-accent-soft text-accent-strong" : "border-nx-border text-muted"}`}>{t("speedStandard")}</button>
           <button type="button" onClick={() => onSpeedChange("fast")} class={`border px-2.5 py-1 text-xs font-medium ${selectedSpeed === "fast" ? "border-accent bg-accent-soft text-accent-strong" : "border-nx-border text-muted"}`}>{t("speedFast")}</button>
-        </div>
+          </div>
+        </details>
       )}
     </section>
   );

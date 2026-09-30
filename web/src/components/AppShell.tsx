@@ -3,6 +3,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { APP_BRAND } from "../../../shared/brand";
 import { useT } from "../../../shared/i18n/context";
 import { Sidebar } from "./Sidebar";
+import { NAV_ITEMS } from "../navigation";
 
 export interface AppShellProps {
   activeHash: string;
@@ -63,12 +64,12 @@ export function AppShell({
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span class="text-sm font-semibold tracking-[-0.01em] text-ink lg:hidden">{APP_BRAND}</span>
+          <span class="text-sm font-medium text-muted"><span class="lg:hidden">{APP_BRAND} / </span>{t(NAV_ITEMS.find((item) => item.hash === activeHash)?.label ?? "overview")}</span>
           <div class="ml-auto flex min-w-0 items-center justify-end">{toolbar}</div>
         </header>
 
-        <main class="flex-1 px-4 py-7 sm:px-7 lg:px-9 lg:py-9 xl:px-12">
-          <div class="mx-auto w-full max-w-[1320px]">{children}</div>
+        <main class="flex-1 px-4 py-6 sm:px-7 lg:px-10 lg:py-8">
+          <div class="mx-auto w-full max-w-[1120px]">{children}</div>
         </main>
         {footer}
       </div>

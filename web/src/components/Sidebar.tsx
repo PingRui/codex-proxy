@@ -40,24 +40,24 @@ function formatUptime(seconds: number | null): string {
   return `${minutes}m`;
 }
 
-function NavigationLinks({ activeHash, onNavigate }: { activeHash: string; onNavigate?: () => void }) {
+function NavigationLinks({ activeHash, onNavigate, secondary = false }: { activeHash: string; onNavigate?: () => void; secondary?: boolean }) {
   const t = useT();
   return (
     <>
-      {NAV_ITEMS.map((item) => {
+      {NAV_ITEMS.filter((item) => secondary === (item.hash === "#/settings" || item.hash === "#/about")).map((item) => {
         const isActive = activeHash === item.hash;
         return (
           <a
             key={item.hash}
             href={item.hash || "#/"}
+            aria-current={isActive ? "page" : undefined}
             onClick={onNavigate}
             class={`relative flex w-full items-center gap-3 rounded-md border px-3 py-2 text-[13px] font-medium transition-colors ${
               isActive
-                ? "border-nx-border bg-surface text-ink"
+                ? "border-transparent bg-surface-raised text-ink"
                 : "border-transparent text-muted hover:bg-surface/70 hover:text-ink"
             }`}
           >
-            {isActive && <span class="absolute -left-[1px] top-2 bottom-2 w-0.5 rounded-full bg-accent" />}
             <NavIcon name={item.icon} />
             <span class="truncate">{t(item.label)}</span>
           </a>
@@ -75,7 +75,7 @@ function SidebarPanel({ activeHash, uptimeSeconds, onClose }: { activeHash: stri
         <BrandMark />
         <div class="min-w-0">
           <div class="text-[15px] font-semibold tracking-[-0.02em] text-ink">{APP_BRAND}</div>
-          <div class="mt-0.5 truncate text-[11px] text-muted">{APP_DESCRIPTOR}</div>
+          <div class="mt-0.5 truncate text-xs text-muted">{APP_DESCRIPTOR}</div>
         </div>
         {onClose && (
           <button onClick={onClose} class="ml-auto rounded-lg p-2 text-muted hover:bg-surface hover:text-ink" aria-label={t("closeSidebar")}>
@@ -89,6 +89,7 @@ function SidebarPanel({ activeHash, uptimeSeconds, onClose }: { activeHash: stri
         <NavigationLinks activeHash={activeHash} onNavigate={onClose} />
       </nav>
       <div class="mx-4 mb-4 border-t border-nx-border pt-4">
+        <nav class="mb-5 space-y-1" aria-label="Utility navigation"><NavigationLinks activeHash={activeHash} onNavigate={onClose} secondary /></nav>
         <div class="flex items-center gap-2 text-xs font-medium text-ink">
           <span class="size-2 rounded-full bg-success" />
           {t("serverOnline")}

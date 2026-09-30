@@ -20,9 +20,11 @@ describe("SettingsTab", () => {
     render(<I18nProvider><SettingsTab models={["gpt-5.4"]} /></I18nProvider>);
 
     expect(screen.getByText("Appearance and language")).toBeTruthy();
-    expect(screen.getByText("Startup")).toBeTruthy();
-    expect(screen.getByText("Codex auth path")).toBeTruthy();
-    expect(screen.getByText("Data location")).toBeTruthy();
+    expect(screen.queryByText("Startup")).toBeNull();
+    expect(screen.queryByText("~/.codex/auth.json")).toBeNull();
+    expect(screen.getByText(/local gateway changes immediately/i)).toBeTruthy();
+    expect(screen.getByText("Connection and access").closest("details")?.open).toBe(false);
+    expect(screen.getByText("Routing and compatibility").closest("details")?.open).toBe(false);
     const advanced = screen.getByText("Advanced").closest("details");
     expect(advanced?.open).toBe(false);
     expect(screen.getByRole("link", { name: "Provider API keys", hidden: true }).getAttribute("href")).toBe("#/api-keys");

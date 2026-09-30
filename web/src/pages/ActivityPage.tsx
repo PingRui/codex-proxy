@@ -30,9 +30,20 @@ export function ActivityPage({ initialTab = "requests", unreadErrors = 0 }: Acti
           <button
             type="button"
             role="tab"
+            id={`activity-${item.id}`}
+            aria-controls="activity-panel"
+            tabIndex={tab === item.id ? 0 : -1}
             aria-selected={tab === item.id}
             key={item.id}
             onClick={() => setTab(item.id)}
+            onKeyDown={(event) => {
+              const index = tabs.findIndex((entry) => entry.id === item.id);
+              const next = event.key === "ArrowRight" ? (index + 1) % tabs.length : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
+              if (next < 0) return;
+              event.preventDefault();
+              setTab(tabs[next].id);
+              document.getElementById(`activity-${tabs[next].id}`)?.focus();
+            }}
             class={`border-b-2 px-4 py-2.5 text-sm font-medium ${tab === item.id ? "border-accent text-accent-strong" : "border-transparent text-muted hover:text-ink"}`}
           >
             {item.label}
@@ -40,7 +51,7 @@ export function ActivityPage({ initialTab = "requests", unreadErrors = 0 }: Acti
         ))}
       </div>
 
-      <div role="tabpanel">
+      <div role="tabpanel" id="activity-panel" aria-labelledby={`activity-${tab}`}>
         {tab === "requests" && <LogsPage embedded />}
         {tab === "errors" && <ErrorsPage />}
         {tab === "usage" && <UsageStats embedded />}

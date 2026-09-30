@@ -82,7 +82,7 @@ function limitPercent(limit: (AccountQuotaWindow & { allowed?: boolean }) | null
     : null;
 }
 
-interface AccountCardProps {
+export interface AccountCardProps {
   account: Account;
   index: number;
   onDelete: (id: string) => Promise<string | null>;
