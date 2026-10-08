@@ -25,6 +25,7 @@ import {
 import { IS_MAC } from "./constants.js";
 import { resolveDesktopIconPath } from "./icon-path.js";
 import { resolveCompatibleUserDataPath } from "./user-data-compat.js";
+import { registerUpdateIpc } from "./update-ipc.js";
 
 
 let mainWindow: BrowserWindow | null = null;
@@ -170,6 +171,13 @@ app.on("ready", async () => {
     // 4. System tray
     createTray();
 
+    registerUpdateIpc({
+      getWindow: () => mainWindow,
+      getOrigin: () => `http://127.0.0.1:${serverHandle?.port}`,
+      status: () => ({ ...getAutoUpdateState(), currentVersion: app.getVersion(), supported: app.isPackaged && !IS_MAC }),
+      check: checkForUpdateManual, download: downloadUpdate, install: installUpdate,
+    });
+
     // 5. Main window
     createWindow();
 
@@ -193,6 +201,19 @@ app.on("ready", async () => {
         autoDownload,
         showUpdateDialog,
         allowPrerelease,
+        prepareForInstall: async () => {
+          if (serverHandle) {
+            let timeout: ReturnType<typeof setTimeout> | undefined;
+            try {
+              await Promise.race([
+                serverHandle.close(),
+                new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error("Gateway shutdown timed out; try restarting the app before updating")), 5000); }),
+              ]);
+            } finally { if (timeout) clearTimeout(timeout); }
+          }
+          allowProcessExit = true;
+          isQuitting = true;
+        },
       });
     }
   } catch (err) {
@@ -245,6 +266,8 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
+      preload: resolve(app.getAppPath(), "dist-electron", "preload.cjs"),
     },
     show: false,
   });
@@ -255,6 +278,11 @@ function createWindow(): void {
 
   const port = serverHandle?.port ?? 8080;
   mainWindow.loadURL(`http://127.0.0.1:${port}/`);
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    try { if (new URL(url).origin === `http://127.0.0.1:${port}`) return; }
+    catch { /* invalid URLs are not trusted */ }
+    event.preventDefault();
+  });
 
   // Mark <html> with platform class so frontend CSS can adapt
   mainWindow.webContents.on("did-finish-load", () => {

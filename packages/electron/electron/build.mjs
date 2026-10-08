@@ -25,6 +25,12 @@ await build({
 
 console.log("[esbuild] dist-electron/main.cjs built successfully");
 
+await build({
+  entryPoints: ["electron/preload.ts"], bundle: true, platform: "node",
+  format: "cjs", outfile: "dist-electron/preload.cjs", external: ["electron"], target: "node20",
+});
+console.log("[esbuild] dist-electron/preload.cjs built successfully");
+
 // 2. Backend server → ESM (dynamically imported by main.cjs)
 //    All npm deps (hono, zod, js-yaml, etc.) are bundled in.
 //    Only Node builtins and optional native modules are external.

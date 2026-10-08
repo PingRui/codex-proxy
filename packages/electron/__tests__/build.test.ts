@@ -57,6 +57,15 @@ describe("electron build (esbuild)", () => {
     expect(statSync(serverMjs).size).toBeGreaterThan(1000);
   });
 
+  it("produces a self-contained sandbox preload with fixed updater channels", () => {
+    buildOnce();
+    const source = readFileSync(resolve(DIST, "preload.cjs"), "utf-8");
+    expect(source).toContain("exposeInMainWorld");
+    expect(source).toContain("nexoraUpdates");
+    expect(source).toContain("nexora:update:install");
+    expect(source).not.toContain('require("fs")');
+  });
+
   it("produces sourcemaps for both bundles", () => {
     buildOnce();
     expect(existsSync(resolve(DIST, "main.cjs.map"))).toBe(true);

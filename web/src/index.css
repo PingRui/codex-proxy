@@ -226,6 +226,11 @@ body {
   user-select: none;
 }
 
+.nx-update-progress { appearance: none; border: none; border-radius: 4px; overflow: hidden; background: rgb(var(--nx-canvas)); }
+.nx-update-progress::-webkit-progress-bar { background: rgb(var(--nx-canvas)); }
+.nx-update-progress::-webkit-progress-value { background: rgb(var(--nx-accent)); }
+.nx-update-progress::-moz-progress-bar { background: rgb(var(--nx-accent)); }
+
 /* Keep native selection only where it is genuinely useful. */
 input,
 textarea,

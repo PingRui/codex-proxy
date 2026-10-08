@@ -3,6 +3,7 @@ import { useI18n } from "../../../shared/i18n/context";
 import { clipboardCopy } from "../../../shared/utils/clipboard";
 import type { UpdateStep } from "../../../shared/hooks/use-update-status";
 import type { TranslationKey } from "../../../shared/i18n/translations";
+import type { DesktopUpdateStatus } from "../../../shared/desktop-updates";
 
 const STEP_LABELS: Record<string, TranslationKey> = {
   pull: "updatePulling",
@@ -23,6 +24,12 @@ interface UpdateModalProps {
   restarting: boolean;
   restartFailed: boolean;
   updateSteps?: UpdateStep[];
+  desktopUpdate?: DesktopUpdateStatus | null;
+  desktopError?: string | null;
+  desktopBusy?: boolean;
+  onDesktopCheck?: () => void;
+  onDesktopDownload?: () => void;
+  onDesktopInstall?: () => void;
 }
 
 export function UpdateModal({
@@ -37,6 +44,8 @@ export function UpdateModal({
   restarting,
   restartFailed,
   updateSteps = [],
+  desktopUpdate, desktopError, desktopBusy = false,
+  onDesktopCheck, onDesktopDownload, onDesktopInstall,
 }: UpdateModalProps) {
   const { t } = useI18n();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -60,9 +69,8 @@ export function UpdateModal({
 
   // Close on Escape
   const handleCancel = (e: Event) => {
-    if (restarting || applying) {
-      e.preventDefault();
-    }
+    e.preventDefault();
+    if (!restarting && !applying) onClose();
   };
 
   if (!open) return null;
@@ -70,19 +78,21 @@ export function UpdateModal({
   return (
     <dialog
       ref={dialogRef}
+      aria-labelledby="update-modal-title"
       onClick={handleBackdropClick}
       onCancel={handleCancel}
       class="backdrop:bg-black/50 bg-transparent p-0 m-0 w-full h-full max-w-none max-h-none inset-0 open:flex open:items-center open:justify-center"
     >
-      <div class="w-full max-w-lg bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-gray-200 dark:border-border-dark overflow-hidden">
+      <div class="mx-4 w-full max-w-lg rounded-xl border border-nx-border bg-surface overflow-hidden">
         {/* Header */}
         <div class="px-5 py-4 border-b border-gray-200 dark:border-border-dark flex items-center justify-between">
-          <h2 class="text-base font-bold text-slate-800 dark:text-text-main">
-            {t("updateTitle")}
+          <h2 id="update-modal-title" class="text-base font-bold text-slate-800 dark:text-text-main">
+            {t(onDesktopCheck ? "desktopUpdatesTitle" : "updateTitle")}
           </h2>
           {!restarting && !applying && (
             <button
               onClick={onClose}
+              aria-label={t("close")}
               class="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:text-text-dim dark:hover:text-text-main hover:bg-slate-100 dark:hover:bg-border-dark transition-colors"
             >
               <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -94,7 +104,16 @@ export function UpdateModal({
 
         {/* Body */}
         <div class="px-5 py-4">
-          {(applying || restarting) && updateSteps.length > 0 ? (
+          {onDesktopCheck ? (
+            <div class="space-y-4 text-sm text-ink">
+              <p class="text-muted">{t("desktopCurrentVersion")}: {desktopUpdate?.currentVersion ?? "—"}{desktopUpdate?.version ? ` → ${desktopUpdate.version}` : ""}</p>
+              {(desktopError || desktopUpdate?.error) && <div role="alert" class="break-words text-danger"><p>{t("desktopUpdateFailed")}</p><p class="mt-1 text-xs">{desktopError || desktopUpdate?.error}</p></div>}
+              <p role="status">{restarting ? t("updateRestarting") : desktopUpdate?.downloaded ? t("desktopReady") : desktopUpdate?.downloading ? t("desktopDownloading") : desktopBusy ? t("checkingUpdates") : desktopUpdate?.supported === false ? t("desktopUpdateUnavailable") : desktopUpdate?.updateAvailable ? t("updateAvailable") : desktopUpdate?.checked && !desktopError && !desktopUpdate.error ? t("upToDate") : t("desktopCheckHint")}</p>
+              {desktopUpdate?.downloading && <progress class="nx-update-progress h-2 w-full" value={desktopUpdate.progress} max={100} aria-label={t("desktopDownloading")} />}
+              {desktopUpdate?.downloading && <p class="text-xs tabular-nums text-muted">{desktopUpdate.progress}%</p>}
+              <p class="text-xs leading-5 text-muted">{t("desktopUpdateHint")}</p>
+            </div>
+          ) : (applying || restarting) && updateSteps.length > 0 ? (
             <div class="space-y-2 py-2">
               {updateSteps.map((s) => (
                 <div key={s.step} class="flex items-center gap-3 text-sm">
@@ -171,9 +190,13 @@ export function UpdateModal({
               disabled={applying}
               class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-text-dim hover:bg-slate-100 dark:hover:bg-border-dark rounded-lg transition-colors disabled:opacity-50"
             >
-              {t("cancelBtn")}
+              {t(onDesktopCheck ? "close" : "cancelBtn")}
             </button>
-            {mode === "git" ? (
+            {onDesktopCheck ? (
+              desktopUpdate?.downloaded ? <button type="button" class="nx-button bg-accent-strong text-white" disabled={desktopBusy || !desktopUpdate.supported} onClick={onDesktopInstall}>{t("desktopRestartUpdate")}</button>
+              : desktopUpdate?.updateAvailable ? <button type="button" class="nx-button bg-accent-strong text-white" disabled={desktopBusy || desktopUpdate.downloading || !desktopUpdate.supported} onClick={onDesktopDownload}>{desktopUpdate.downloading ? t("desktopDownloading") : t("desktopDownloadUpdate")}</button>
+              : <button type="button" class="nx-button" disabled={desktopBusy || !desktopUpdate?.supported} onClick={onDesktopCheck}>{t("checkForUpdates")}</button>
+            ) : mode === "git" ? (
               <button
                 onClick={onApply}
                 disabled={applying}

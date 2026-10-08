@@ -43,7 +43,7 @@ vi.mock("../electron/constants.js", () => ({
 }));
 
 // Import after mocks are set up
-const { getAutoUpdateState, initAutoUpdater, stopAutoUpdater } = await import(
+const { getAutoUpdateState, initAutoUpdater, stopAutoUpdater, checkForUpdateManual, downloadUpdate, installUpdate } = await import(
   "../electron/auto-updater.js"
 );
 
@@ -79,8 +79,53 @@ describe("auto-updater state machine", () => {
 
     // autoDownload defaults to false — user must confirm before downloading
     expect(mockAutoUpdater.autoDownload).toBe(false);
-    expect(mockAutoUpdater.autoInstallOnAppQuit).toBe(true);
+    expect(mockAutoUpdater.autoInstallOnAppQuit).toBe(false);
     expect(mockAutoUpdater.allowPrerelease).toBe(false);
+  });
+
+  it("only silently installs a completed download after an explicit request", async () => {
+    const prepare = vi.fn(async () => {});
+    initAutoUpdater({ ...mockOptions, prepareForInstall: prepare });
+    await installUpdate();
+    expect(mockAutoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    mockAutoUpdater.emit("update-downloaded", { version: "2.1.9" });
+    await installUpdate();
+    await installUpdate();
+    expect(prepare).toHaveBeenCalledTimes(1);
+    expect(mockAutoUpdater.quitAndInstall).toHaveBeenCalledExactlyOnceWith(true, true);
+  });
+
+  it("starts download state immediately and rejects overlapping downloads", async () => {
+    let finish!: () => void;
+    mockAutoUpdater.downloadUpdate.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    initAutoUpdater(mockOptions);
+    mockAutoUpdater.emit("update-available", { version: "2.1.9" });
+    const first = downloadUpdate();
+    await downloadUpdate();
+    expect(getAutoUpdateState().downloading).toBe(true);
+    expect(mockAutoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
+    mockAutoUpdater.emit("update-downloaded", { version: "2.1.9" });
+    finish();
+    await first;
+  });
+
+  it("exposes check and download failures for retry", async () => {
+    initAutoUpdater(mockOptions);
+    mockAutoUpdater.checkForUpdates.mockRejectedValueOnce(new Error("Offline"));
+    await checkForUpdateManual();
+    expect(getAutoUpdateState()).toMatchObject({ checking: false, error: "Offline" });
+    mockAutoUpdater.emit("update-available", { version: "2.1.9" });
+    mockAutoUpdater.downloadUpdate.mockRejectedValueOnce(new Error("Download failed"));
+    await downloadUpdate();
+    expect(getAutoUpdateState()).toMatchObject({ downloading: false, downloaded: false, error: "Download failed" });
+  });
+
+  it("does not recheck and discard a downloaded update while waiting for user restart", () => {
+    initAutoUpdater(mockOptions);
+    mockAutoUpdater.emit("update-downloaded", { version: "2.1.9" });
+    vi.advanceTimersByTime(5 * 60 * 60 * 1000);
+    expect(mockAutoUpdater.checkForUpdates).not.toHaveBeenCalled();
+    expect(getAutoUpdateState().downloaded).toBe(true);
   });
 
   it("autoDownload=true when explicitly set", () => {

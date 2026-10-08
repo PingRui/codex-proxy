@@ -38,13 +38,13 @@ function makeAccounts(total: number, status: string = "active"): Account[] {
   return Array.from({ length: total }, (_, index) => makeAccount(`acct-${index + 1}`, status));
 }
 
-function renderAccountList(accounts: Account[]) {
+function renderAccountList(accounts: Account[], onRefresh = vi.fn()) {
   return render(
     <AccountList
       accounts={accounts}
       loading={false}
       onDelete={vi.fn(async () => null)}
-      onRefresh={vi.fn()}
+      onRefresh={onRefresh}
       refreshing={false}
       lastUpdated={null}
     />,
@@ -84,6 +84,7 @@ describe("AccountList", () => {
         if (key === "healthCheckResult") return `alive ${vars?.alive} dead ${vars?.dead} skipped ${vars?.skipped}`;
         if (key === "quotaCriticalWarning") return `critical ${vars?.count}`;
         if (key === "quotaWarning") return `warning ${vars?.count}`;
+        if (key === "quotaRefreshSummary") return `success ${vars?.success} failed ${vars?.failed} skipped ${vars?.skipped}`;
         return key;
       },
     );
@@ -146,12 +147,78 @@ describe("AccountList", () => {
   it("names compact refresh, health, and status controls", () => {
     renderAccountList([makeAccount("active-1", "active")]);
 
-    const refresh = screen.getByRole("button", { name: "refreshList" });
+    const refresh = screen.getByRole("button", { name: "refreshAllQuota" });
     const health = screen.getByRole("button", { name: "healthCheck", hidden: true });
-    expect(refresh.getAttribute("aria-label")).toBe("refreshList");
+    expect(refresh.getAttribute("aria-label")).toBe("refreshAllQuota");
     expect(health.getAttribute("aria-label")).toBe("healthCheck");
     expect(refresh.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(health.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByRole("combobox", { name: "statusFilter" })).toBeTruthy();
+  });
+
+  it("refreshes active accounts beyond the visible page and filter, including exhausted cached quota", async () => {
+    getStorage().setItem(STATUS_FILTER_STORAGE_KEY, "expired");
+    const accounts = makeAccounts(12);
+    accounts[0].quota = { rate_limit: { limit_reached: true } };
+    const onRefresh = vi.fn();
+    renderAccountList([...accounts, makeAccount("expired", "expired"), makeAccount("disabled", "disabled")], onRefresh);
+    fireEvent.click(screen.getByRole("button", { name: "refreshAllQuota" }));
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+    const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url)).filter(url => url.endsWith("/quota"));
+    expect(urls).toHaveLength(12);
+    expect(urls).toContain("/auth/accounts/acct-1/quota");
+    expect(urls).toContain("/auth/accounts/acct-12/quota");
+    expect(screen.getByRole("status").textContent).toContain("success 12 failed 0 skipped 2");
+  });
+
+  it("continues after HTTP and network failures and encodes account identifiers", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("http-fail/quota")) return { ok: false, status: 502 };
+      if (url.includes("network-fail/quota")) throw new Error("Offline");
+      return { ok: true, json: async () => ({ warnings: [] }) };
+    }));
+    const onRefresh = vi.fn();
+    renderAccountList([makeAccount("http-fail", "active"), makeAccount("network-fail", "active"), makeAccount("a/b", "active")], onRefresh);
+    fireEvent.click(screen.getByRole("button", { name: "refreshAllQuota" }));
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("status").textContent).toContain("success 1 failed 2 skipped 0");
+    expect(screen.getByRole("status").textContent).toContain("network-fail@example.com");
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/auth/accounts/a%2Fb/quota")).toBe(true);
+    expect(screen.getByRole("button", { name: "refreshAllQuota" })).toHaveProperty("disabled", false);
+  });
+
+  it("limits concurrency to two and ignores repeated refresh clicks until completion", async () => {
+    const releases: Array<() => void> = [];
+    let running = 0;
+    let peak = 0;
+    vi.stubGlobal("fetch", vi.fn((url: string) => {
+      if (!url.endsWith("/quota")) return Promise.resolve({ ok: true, json: async () => ({ warnings: [] }) });
+      running++;
+      peak = Math.max(peak, running);
+      return new Promise(resolve => releases.push(() => { running--; resolve({ ok: true }); }));
+    }));
+    const onRefresh = vi.fn();
+    renderAccountList(makeAccounts(3), onRefresh);
+    const button = screen.getByRole("button", { name: "refreshAllQuota" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(releases).toHaveLength(2);
+    expect(button).toHaveProperty("disabled", true);
+    releases[0]();
+    await waitFor(() => expect(releases).toHaveLength(3));
+    releases[1]();
+    releases[2]();
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+    expect(peak).toBe(2);
+    expect(screen.getByRole("status").textContent).toContain("success 3 failed 0 skipped 0");
+  });
+
+  it("reloads the list without upstream requests when no accounts are eligible", async () => {
+    const onRefresh = vi.fn();
+    renderAccountList([makeAccount("expired", "expired")], onRefresh);
+    fireEvent.click(screen.getByRole("button", { name: "refreshAllQuota" }));
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).endsWith("/quota"))).toBe(false);
+    expect(screen.getByRole("status").textContent).toContain("success 0 failed 0 skipped 1");
   });
 });

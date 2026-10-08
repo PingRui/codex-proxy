@@ -18,6 +18,8 @@ import { PageHeader } from "./components/PageHeader";
 import { ProxyPool } from "./components/ProxyPool";
 import { SettingsTab } from "./components/SettingsTab";
 import { UpdateModal } from "./components/UpdateModal";
+import { DesktopUpdateControl } from "./components/DesktopUpdateControl";
+import { getDesktopUpdateBridge } from "../../shared/desktop-updates";
 import { deriveGatewayState } from "./lib/gateway-state";
 import { migrateLegacyLayoutMode } from "./lib/layout-preferences";
 import { LEGACY_HASH_REDIRECTS, NAV_ITEMS, resolveAppRouteHash } from "./navigation";
@@ -85,6 +87,7 @@ function useUpdateMessage() {
 }
 
 function Dashboard() {
+  const desktopBridge = getDesktopUpdateBridge();
   const { t } = useI18n();
   const accounts = useAccounts();
   const proxies = useProxies();
@@ -146,6 +149,7 @@ function Dashboard() {
   const toolbar = (
     <Header
       simplified
+      updateControl={desktopBridge ? <DesktopUpdateControl bridge={desktopBridge} /> : undefined}
       onAddAccount={accounts.startAdd}
       onCheckUpdate={update.checkForUpdate}
       onOpenUpdateModal={() => setShowModal(true)}
@@ -218,7 +222,7 @@ function Dashboard() {
         {routeHash === "#/about" && <AboutPage version={update.status?.proxy.version ?? null} commit={update.status?.proxy.commit ?? null} />}
       </div>
 
-      {update.proxyUpdateInfo && (
+      {!desktopBridge && update.proxyUpdateInfo && (
         <UpdateModal
           open={showModal}
           onClose={() => setShowModal(false)}

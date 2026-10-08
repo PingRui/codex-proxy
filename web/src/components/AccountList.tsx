@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "preact/hooks";
+import { useState, useCallback, useEffect, useRef } from "preact/hooks";
 import { useI18n, useT } from "../../../shared/i18n/context";
 import { AccountRow } from "./AccountRow";
 import { AccountBulkActions } from "./AccountBulkActions";
@@ -73,6 +73,47 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
   const [deleteResult, setDeleteResult] = useState<string | null>(null);
   const [maintenanceBusy, setMaintenanceBusy] = useState(false);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const quotaRefreshLock = useRef(false);
+  const [quotaRefreshing, setQuotaRefreshing] = useState(false);
+  const [quotaRefreshResult, setQuotaRefreshResult] = useState<{ success: number; failed: string[]; skipped: number } | null>(null);
+
+  const runRefreshAllQuota = useCallback(async () => {
+    if (quotaRefreshLock.current || refreshing || loading) return;
+    quotaRefreshLock.current = true;
+    setQuotaRefreshing(true);
+    setQuotaRefreshResult(null);
+    // Use the complete account list, not the current filter or visible page.
+    // An active account with cached exhausted quota must still be queried.
+    const targets = accounts.filter((account) => account.status === "active");
+    let next = 0;
+    let success = 0;
+    const failed: string[] = [];
+    const worker = async () => {
+      while (next < targets.length) {
+        const account = targets[next++];
+        try {
+          const response = await fetch(`/auth/accounts/${encodeURIComponent(account.id)}/quota`, {
+            signal: AbortSignal.timeout(30_000),
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          success++;
+        } catch {
+          failed.push(account.email || account.id);
+        }
+      }
+    };
+    try {
+      // Avoid flooding the upstream service while letting independent failures finish.
+      await Promise.all(Array.from({ length: Math.min(2, targets.length) }, worker));
+      await onRefresh();
+      setQuotaRefreshResult({ success, failed, skipped: accounts.length - targets.length });
+    } catch (error) {
+      console.warn("[AccountList] Failed to reload accounts after quota refresh", error);
+    } finally {
+      quotaRefreshLock.current = false;
+      setQuotaRefreshing(false);
+    }
+  }, [accounts, onRefresh, refreshing, loading]);
 
   const runBatchAction = useCallback(async (action: "delete" | "active" | "disabled") => {
     if (selectedIds.size === 0) return;
@@ -278,15 +319,16 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
       <div class="flex items-center gap-1.5 flex-wrap">
         {/* Refresh list */}
         <button
-          onClick={onRefresh}
-          disabled={refreshing}
+          onClick={runRefreshAllQuota}
+          disabled={refreshing || quotaRefreshing || loading}
           class={accountToolbarControlClass}
-          aria-label={t("refreshList")}
+          aria-label={t("refreshAllQuota")}
+          aria-busy={quotaRefreshing}
         >
           <svg aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
-          <span class="hidden sm:inline">{t("refreshList")}</span>
+          <span class="hidden sm:inline">{t(quotaRefreshing ? "refreshing" : "refreshAllQuota")}</span>
         </button>
         {/* Status filter dropdown */}
         <select
@@ -326,6 +368,10 @@ export function AccountList({ accounts, loading, onDelete, onRefresh, refreshing
           </div>
         )}
       </div>
+      {quotaRefreshResult && <div role="status" class={`text-xs ${quotaRefreshResult.failed.length ? "text-warning" : "text-muted"}`}>
+        <p>{t("quotaRefreshSummary", { success: quotaRefreshResult.success, failed: quotaRefreshResult.failed.length, skipped: quotaRefreshResult.skipped })}</p>
+        {quotaRefreshResult.failed.length > 0 && <p class="mt-1 break-all">{t("quotaRefreshFailures")}: {quotaRefreshResult.failed.join(", ")}</p>}
+      </div>}
       <details
         open={maintenanceOpen}
         onToggle={(event) => setMaintenanceOpen(event.currentTarget.open)}

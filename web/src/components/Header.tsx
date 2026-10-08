@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { ComponentChildren } from "preact";
 import { useI18n } from "../../../shared/i18n/context";
 import { type LangCode } from "../../../shared/i18n/translations";
 import { useTheme } from "../../../shared/theme/context";
@@ -27,6 +28,7 @@ export interface HeaderProps {
   onLogout?: () => void;
   unreadErrors?: number;
   simplified?: boolean;
+  updateControl?: ComponentChildren;
 }
 
 export function Header({
@@ -39,6 +41,7 @@ export function Header({
   onLogout,
   unreadErrors = 0,
   simplified = false,
+  updateControl,
 }: HeaderProps) {
   const { lang, setLang, t } = useI18n();
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -83,7 +86,7 @@ export function Header({
   if (simplified) return (
     <div class="flex items-center gap-2">
       {unreadErrors > 0 && <a href="#/errors" class="nx-button text-danger" aria-label={`${unreadErrors} ${t("errorsBadge")}`}>{t("errorsBadge")} {unreadErrors}</a>}
-      <button type="button" class="nx-button" disabled={checking} onClick={runUpdateAction} title={updateStatusMsg ?? undefined}>{checking ? t("checkingUpdates") : hasUpdate ? t("updateAvailable") : t("checkForUpdates")}</button>
+      {updateControl ?? <button type="button" class="nx-button" disabled={checking} onClick={runUpdateAction} title={updateStatusMsg ?? undefined}>{checking ? t("checkingUpdates") : hasUpdate ? t("updateAvailable") : t("checkForUpdates")}</button>}
       {onLogout && <button type="button" class="nx-button" onClick={onLogout}>{t("dashboardLogout")}</button>}
     </div>
   );

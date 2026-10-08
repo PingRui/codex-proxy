@@ -11,9 +11,11 @@ import { IS_MAC, GITHUB_REPO } from "./constants.js";
 
 export interface AutoUpdateState {
   checking: boolean;
+  checked: boolean;
   updateAvailable: boolean;
   downloading: boolean;
   downloaded: boolean;
+  installing: boolean;
   progress: number;
   version: string | null;
   releaseUrl: string | null;
@@ -27,13 +29,16 @@ interface AutoUpdaterOptions {
   autoDownload?: boolean;
   showUpdateDialog?: boolean;
   allowPrerelease?: boolean;
+  prepareForInstall?: () => Promise<void>;
 }
 
 const state: AutoUpdateState = {
   checking: false,
+  checked: false,
   updateAvailable: false,
   downloading: false,
   downloaded: false,
+  installing: false,
   progress: 0,
   version: null,
   releaseUrl: null,
@@ -46,12 +51,17 @@ const INITIAL_DELAY_MS = 30_000; // 30 seconds after startup
 let checkTimer: ReturnType<typeof setInterval> | null = null;
 let initialTimer: ReturnType<typeof setTimeout> | null = null;
 let dismissedVersion: string | null = null;
+let prepareForInstall: (() => Promise<void>) | undefined;
 
 export function getAutoUpdateState(): AutoUpdateState {
   return { ...state };
 }
 
 export function initAutoUpdater(options: AutoUpdaterOptions): void {
+  stopAutoUpdater();
+  Object.assign(state, { checking: false, checked: false, updateAvailable: false, downloading: false, downloaded: false, installing: false, progress: 0, version: null, releaseUrl: null, error: null });
+  dismissedVersion = null;
+  prepareForInstall = options.prepareForInstall;
   const isAutoUpdate = options.autoUpdate ?? true;
   const isAutoDownload = (options.autoDownload ?? false) && !IS_MAC;
   const shouldShowUpdateDialog = options.showUpdateDialog ?? false;
@@ -61,7 +71,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   // show_update_dialog: true → opt in to update/restart prompts
   // macOS always false — ad-hoc signed zips can't be auto-installed
   autoUpdater.autoDownload = isAutoDownload;
-  autoUpdater.autoInstallOnAppQuit = !IS_MAC;
+  autoUpdater.autoInstallOnAppQuit = false;
   // Beta channel opt-in via config.update.allow_prerelease (default false).
   // electron-builder writes beta-mac.yml / beta.yml for tags like vX.Y.Z-beta.SHA;
   // setting allowPrerelease=true makes electron-updater consume that channel.
@@ -75,7 +85,11 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   autoUpdater.on("update-available", (info: UpdateInfo) => {
     state.checking = false;
     state.updateAvailable = true;
+    state.checked = true;
     state.version = info.version;
+    state.error = null;
+    state.downloaded = false;
+    state.progress = 0;
     state.releaseUrl = `https://github.com/${GITHUB_REPO}/releases/tag/v${info.version}`;
     options.rebuildTrayMenu();
 
@@ -109,9 +123,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
             console.error("[AutoUpdater] Failed to open release page:", err instanceof Error ? err.message : err);
           });
         } else {
-          autoUpdater.downloadUpdate().catch((err: unknown) => {
-            console.error("[AutoUpdater] Download failed:", err instanceof Error ? err.message : err);
-          });
+          void downloadUpdate();
         }
       } else {
         dismissedVersion = info.version;
@@ -122,6 +134,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   autoUpdater.on("update-not-available", () => {
     state.checking = false;
     state.updateAvailable = false;
+    state.checked = true;
   });
 
   autoUpdater.on("download-progress", (progress: ProgressInfo) => {
@@ -142,6 +155,8 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   autoUpdater.on("update-downloaded", (info: UpdateInfo) => {
     state.downloading = false;
     state.downloaded = true;
+    state.version = info.version;
+    state.error = null;
     state.progress = 100;
     options.rebuildTrayMenu();
 
@@ -164,7 +179,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
       : dialog.showMessageBox(readyOptions);
     readyPromise.then(({ response }) => {
       if (response === 0) {
-        autoUpdater.quitAndInstall(false, true);
+        void installUpdate();
       }
     });
   });
@@ -172,6 +187,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   autoUpdater.on("error", (err: Error) => {
     state.checking = false;
     state.downloading = false;
+    state.installing = false;
     state.error = err.message;
     console.error("[AutoUpdater] Error:", err.message);
     options.rebuildTrayMenu();
@@ -183,6 +199,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   if (isAutoUpdate) {
     // Initial check after delay
     initialTimer = setTimeout(() => {
+      if (state.downloading || state.downloaded || state.installing || state.checking) return;
       autoUpdater.checkForUpdates().catch((err: Error) => {
         console.warn("[AutoUpdater] Initial check failed:", err.message);
       });
@@ -190,6 +207,7 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
 
     // Periodic check
     checkTimer = setInterval(() => {
+      if (state.downloading || state.downloaded || state.installing || state.checking) return;
       autoUpdater.checkForUpdates().catch((err: Error) => {
         console.warn("[AutoUpdater] Periodic check failed:", err.message);
       });
@@ -198,14 +216,17 @@ export function initAutoUpdater(options: AutoUpdaterOptions): void {
   }
 }
 
-export function checkForUpdateManual(): void {
-  autoUpdater.checkForUpdates().catch((err: Error) => {
-    console.warn("[AutoUpdater] Manual check failed:", err.message);
-  });
+export async function checkForUpdateManual(): Promise<void> {
+  if (state.checking || state.downloading || state.downloaded || state.installing) return;
+  state.checking = true;
+  state.error = null;
+  try { await autoUpdater.checkForUpdates(); }
+  catch (err) { state.error = err instanceof Error ? err.message : String(err); }
+  finally { state.checking = false; }
 }
 
 /** Open release page on macOS; download installer on Windows/Linux. */
-export function downloadUpdate(): void {
+export async function downloadUpdate(): Promise<void> {
   if (IS_MAC) {
     if (state.releaseUrl) {
       shell.openExternal(state.releaseUrl).catch((err: unknown) => {
@@ -214,13 +235,25 @@ export function downloadUpdate(): void {
     }
     return;
   }
-  autoUpdater.downloadUpdate().catch((err: Error) => {
-    console.warn("[AutoUpdater] Download failed:", err.message);
-  });
+  if (!state.updateAvailable || state.checking || state.downloading || state.downloaded || state.installing) return;
+  state.downloading = true;
+  state.error = null;
+  state.progress = 0;
+  try { await autoUpdater.downloadUpdate(); }
+  catch (err) { state.downloading = false; state.error = err instanceof Error ? err.message : String(err); }
 }
 
-export function installUpdate(): void {
-  autoUpdater.quitAndInstall(false, true);
+export async function installUpdate(): Promise<void> {
+  if (IS_MAC || !state.downloaded || state.downloading || state.installing) return;
+  state.installing = true;
+  state.error = null;
+  try {
+    await prepareForInstall?.();
+    autoUpdater.quitAndInstall(true, true);
+  } catch (err) {
+    state.installing = false;
+    state.error = err instanceof Error ? err.message : String(err);
+  }
 }
 
 export function stopAutoUpdater(): void {
