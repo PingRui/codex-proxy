@@ -49,7 +49,7 @@ export function SettingsTab({ models }: SettingsTabProps) {
         </div>
       </section>
 
-      <p class="max-w-2xl text-sm leading-6 text-muted">{t("codexSyncGuidance")}</p>
+      <p class="max-w-2xl text-sm leading-6 text-muted">{t("proxyAccountsHint")}</p>
 
       <div>
         <details class="nx-disclosure"><summary>{t("connectionSettings")}</summary><div class="mt-5 space-y-5">

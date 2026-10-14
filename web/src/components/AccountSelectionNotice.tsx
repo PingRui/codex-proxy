@@ -8,10 +8,10 @@ interface AccountSelectionNoticeProps {
 
 export function AccountSelectionNotice({ result, onDismiss }: AccountSelectionNoticeProps) {
   const t = useT();
-  const success = result.codexSynced;
+  const success = result.proxySelected;
   const message = success
     ? t("gatewaySwitchSuccess")
-    : t("gatewaySwitchSyncFailed", { warning: result.warning || result.codexAuthPath || "—" });
+    : result.warning || t("switchAccount");
 
   return (
     <div

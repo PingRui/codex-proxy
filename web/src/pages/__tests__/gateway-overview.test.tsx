@@ -155,6 +155,6 @@ describe("GatewayOverview", () => {
 
     renderOverview(accounts);
 
-    expect(screen.getByText("Gateway account switched. Codex Desktop sync failed: Unable to update Codex auth.json")).toBeTruthy();
+    expect(screen.getByText("Gateway account switched. Your local Codex login was not changed.")).toBeTruthy();
   });
 });

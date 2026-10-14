@@ -95,7 +95,7 @@ describe("Accounts gateway source workflow", () => {
       </I18nProvider>,
     );
 
-    expect(screen.getByText("Gateway account switched. Codex Desktop sync failed: Permission denied")).toBeTruthy();
+    expect(screen.getByText("Gateway account switched. Your local Codex login was not changed.")).toBeTruthy();
   });
 
   it("does not present manual gateway controls in automatic routing mode", () => {

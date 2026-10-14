@@ -1,6 +1,5 @@
 import type { AccountPool } from "../auth/account-pool.js";
 import {
-  getCodexAuthPath,
   writeCodexAuth,
   type CodexAuthWriteResult,
 } from "../auth/codex-auth-writer.js";
@@ -58,18 +57,22 @@ export class AccountSelectionService {
       throw new AccountSelectionError("unavailable", "Account cannot be selected in its current state.");
     }
 
-    const writeResult = this.writer(entry);
     return {
       selectedAccountId: entryId,
       proxySelected: true,
-      codexSynced: writeResult.ok,
-      restartCodexRequired: writeResult.ok,
-      codexAuthPath: writeResult.path,
-      ...(writeResult.ok ? {} : { warning: writeResult.error ?? "Failed to update Codex authentication." }),
+      codexSynced: false,
+      restartCodexRequired: false,
+      codexAuthPath: "",
     };
   }
 
-  getCodexAuthPath(): string {
-    return getCodexAuthPath();
+  selectCodex(entryId: string): CodexAuthWriteResult {
+    const entry = this.pool.getEntry(entryId);
+    if (!entry) throw new AccountSelectionError("not_found", "Account not found.");
+    if (entry.status !== "active") {
+      throw new AccountSelectionError("unavailable", "Reauthorize this account before using it in Codex.");
+    }
+    return this.writer(entry);
   }
+
 }

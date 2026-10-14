@@ -28,6 +28,7 @@ import {
 import { FallbackUpstreamStore } from "../auth/fallback-upstream.js";
 import { getFallbackActivity } from "../auth/fallback-state.js";
 import { getProxyUrl as getRuntimeProxyUrl } from "../tls/proxy.js";
+import { readLocalCodexStatus } from "../auth/codex-auth-reader.js";
 import {
   buildAccountExportPayload,
   parseAccountExportFormat,
@@ -159,6 +160,19 @@ export function createAccountRoutes(pool: AccountPool, scheduler: RefreshSchedul
 
   // ── Per-account routes ─────────────────────────────────────────
 
+  app.get("/auth/codex/status", (c) => c.json(readLocalCodexStatus()));
+
+  app.post("/auth/accounts/:id/select-codex", (c) => {
+    try {
+      const result = selectionSvc.selectCodex(c.req.param("id"));
+      if (!result.ok) return c.json({ error: result.error }, 409);
+      return c.json({ ...readLocalCodexStatus(), restartCodexRequired: true });
+    } catch (error) {
+      if (!(error instanceof AccountSelectionError)) throw error;
+      return c.json({ error: error.message }, error.reason === "not_found" ? 404 : 409);
+    }
+  });
+
   app.post("/auth/accounts/:id/select", (c) => {
     try {
       const result = selectionSvc.select(c.req.param("id"));
@@ -218,7 +232,6 @@ export function createAccountRoutes(pool: AccountPool, scheduler: RefreshSchedul
       accounts,
       selected_account_id: pool.getSelectedAccountId(),
       manual_mode: pool.isManualRouting(),
-      codex_auth_path: selectionSvc.getCodexAuthPath(),
       persistence_health: pool.getPersistenceHealth(),
       fallback_upstream: fallbackUpstream?.getPublic() ?? null,
     });

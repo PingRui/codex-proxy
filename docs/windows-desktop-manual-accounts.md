@@ -55,16 +55,17 @@ NEXORA 按 Windows 用户保存数据，不会将账号登录状态共享给其�
 
 图片请求也使用当前网关账号。该账号需要具备相应能力。
 
-## 5. 同步到 Codex Desktop
+## 5. 独立切换本机 Codex 账号
 
-选择网关账号时，NEXORA 会分别执行两件事：
+Accounts 页面将本机 Codex 登录与反代账号分开显示。选择网关账号只修改反代来源，不会写入 Codex 登录。
 
-1. 将它设为本地网关来源。
-2. 尝试将该账号写入 Codex Desktop 的标准 `auth.json`。
+在“本机 Codex 账号”区域选择一个已授权账号，点击“写入 Codex 登录”，才会更新 Codex 的 `auth.json`。此操作不会改变反代来源账号。
 
 默认目标是 `%USERPROFILE%\.codex\auth.json`；如果设置了 `CODEX_HOME`，则使用 `%CODEX_HOME%\auth.json`。原文件会备份为 `auth.json.bak`。
 
-如 Codex 同步失败，本地网关选择仍然保持成功，界面会单独显示同步错误和目标路径。修复问题后可以重试同步。
+该区域读取登录文件中的身份信息，不读取或证明运行中的 Codex 当前会话。未找到文件、API Key 登录、读取失败会分别显示；不会用反代选中账号替代本机身份。读取状态的接口不返回 token 或 API Key。
+
+写入失败时显示错误，不标记切换成功。修复问题后可以重试。
 
 Codex Desktop 需由用户手动退出并重启才会读取新登录状态。NEXORA 不会启动、停止或重启 Codex Desktop。
 

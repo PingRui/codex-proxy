@@ -19,7 +19,7 @@ function makePool(): AccountPool {
 }
 
 describe("AccountSelectionService", () => {
-  it("selects the proxy account and reports a successful Codex sync", () => {
+  it("selects the proxy account without writing Codex login", () => {
     const pool = makePool();
     const id = pool.addOAuthAccount({
       accessToken: createValidJwt({ accountId: "acct-selected" }),
@@ -35,13 +35,13 @@ describe("AccountSelectionService", () => {
     expect(result).toMatchObject({
       selectedAccountId: id,
       proxySelected: true,
-      codexSynced: true,
-      restartCodexRequired: true,
+      codexSynced: false,
+      restartCodexRequired: false,
     });
-    expect(writer).toHaveBeenCalledOnce();
+    expect(writer).not.toHaveBeenCalled();
   });
 
-  it("keeps the proxy selection and reports partial success when Codex sync fails", () => {
+  it("writes Codex independently and preserves proxy selection on write failure", () => {
     const pool = makePool();
     const id = pool.addOAuthAccount({
       accessToken: createValidJwt({ accountId: "acct-partial" }),
@@ -54,12 +54,22 @@ describe("AccountSelectionService", () => {
       error: "Access denied",
     }));
 
-    const result = new AccountSelectionService(pool, writer).select(id);
+    const result = new AccountSelectionService(pool, writer).selectCodex(id);
 
-    expect(pool.getSelectedAccountId()).toBe(id);
-    expect(result.codexSynced).toBe(false);
-    expect(result.restartCodexRequired).toBe(false);
-    expect(result.warning).toBe("Access denied");
+    expect(pool.getSelectedAccountId()).toBeNull();
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Access denied");
+  });
+
+  it("preserves a different proxy account when writing the Codex login", () => {
+    const pool = makePool();
+    const a = pool.addOAuthAccount({ accessToken: createValidJwt({ accountId: "a" }), refreshToken: "ra", idToken: "ia" });
+    const b = pool.addOAuthAccount({ accessToken: createValidJwt({ accountId: "b" }), refreshToken: "rb", idToken: "ib" });
+    pool.selectAccount(a);
+    const writer = vi.fn(() => ({ ok: true, path: "fixture" }));
+    expect(new AccountSelectionService(pool, writer).selectCodex(b).ok).toBe(true);
+    expect(pool.getSelectedAccountId()).toBe(a);
+    expect(writer).toHaveBeenCalledWith(pool.getEntry(b));
   });
 
   it("rejects an unknown account", () => {

@@ -22,7 +22,7 @@ describe("SettingsTab", () => {
     expect(screen.getByText("Appearance and language")).toBeTruthy();
     expect(screen.queryByText("Startup")).toBeNull();
     expect(screen.queryByText("~/.codex/auth.json")).toBeNull();
-    expect(screen.getByText(/local gateway changes immediately/i)).toBeTruthy();
+    expect(screen.getByText(/does not modify the local Codex login/i)).toBeTruthy();
     expect(screen.getByText("Connection and access").closest("details")?.open).toBe(false);
     expect(screen.getByText("Routing and compatibility").closest("details")?.open).toBe(false);
     const advanced = screen.getByText("Advanced").closest("details");

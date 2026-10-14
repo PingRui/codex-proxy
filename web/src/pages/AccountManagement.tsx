@@ -2,6 +2,7 @@ import type { useAccounts } from "../../../shared/hooks/use-accounts";
 import { useT } from "../../../shared/i18n/context";
 import { AccountList } from "../components/AccountList";
 import { PageHeader } from "../components/PageHeader";
+import { LocalCodexAccount } from "../components/LocalCodexAccount";
 
 interface AccountManagementProps {
   accounts: ReturnType<typeof useAccounts>;
@@ -29,6 +30,10 @@ export function AccountManagement({ accounts, onAddAccount }: AccountManagementP
           </button>
         )}
       />
+
+      <LocalCodexAccount accounts={accounts.list} />
+      <h2 class="mb-2 text-base font-semibold text-ink">{t("proxyAccountsTitle")}</h2>
+      <p class="mb-5 text-sm text-muted">{t("proxyAccountsHint")}</p>
 
       {!accounts.persistenceHealth.ok && (
         <div role="alert" data-testid="persistence-banner" class="mb-5 rounded-lg border border-warning/30 bg-warning-container px-4 py-3 text-warning">
