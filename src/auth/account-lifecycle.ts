@@ -110,7 +110,8 @@ export class AccountLifecycle {
     if (available.length === 0) return null;
 
     let candidates = available;
-    if (options?.model) {
+    // Manual selection is authoritative; upstream decides model entitlement.
+    if (this.routingMode !== "manual" && options?.model) {
       const preferredPlans = getModelPlanTypes(options.model);
       if (preferredPlans.length > 0) {
         const planSet = new Set(preferredPlans);

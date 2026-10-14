@@ -1,6 +1,6 @@
 {
   "name": "codex-proxy",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "description": "NEXORA multi-account AI gateway with an OpenAI-compatible local API",
   "author": "PingRui",
   "repository": "https://github.com/PingRui/codex-proxy",

@@ -592,6 +592,38 @@ describe("AccountPool", () => {
   });
 
   describe("manual routing mode", () => {
+    it("uses the selected Plus account despite a Team-only model cache", () => {
+      const manualPool = new AccountPool({ routingMode: "manual", initialToken: null });
+      const plus = manualPool.addAccount("manual-plus-token");
+      const team = manualPool.addAccount("manual-team-token");
+      vi.mocked(getModelPlanTypes).mockReturnValue(["team"]);
+      expect(manualPool.selectAccount(plus)).toBe(true);
+      const acquired = manualPool.acquire({ model: "gpt-6.1-sol", preferredEntryId: team });
+      expect(acquired?.entryId).toBe(plus);
+      if (acquired) manualPool.release(acquired.entryId);
+      expect(manualPool.getSelectedAccountId()).toBe(plus);
+      expect(manualPool.selectAccount(team)).toBe(true);
+      const next = manualPool.acquire({ model: "gpt-6.1-sol" });
+      expect(next?.entryId).toBe(team);
+      if (next) manualPool.release(next.entryId);
+    });
+
+    it("still blocks exhausted or busy selected accounts without switching to another", () => {
+      const manualPool = new AccountPool({ routingMode: "manual", initialToken: null });
+      const plus = manualPool.addAccount("manual-plus-token");
+      const team = manualPool.addAccount("manual-team-token");
+      vi.mocked(getModelPlanTypes).mockReturnValue(["team"]);
+      manualPool.selectAccount(plus);
+      const acquired = manualPool.acquire({ model: "gpt-6.1-sol" });
+      expect(acquired?.entryId).toBe(plus);
+      expect(manualPool.acquire({ model: "gpt-6.1-sol" })).toBeNull();
+      if (acquired) manualPool.release(acquired.entryId);
+      manualPool.applyRateLimit429(plus, { retryAfterSec: 60 });
+      expect(manualPool.acquire({ model: "gpt-6.1-sol" })).toBeNull();
+      expect(manualPool.getSelectedAccountId()).toBe(plus);
+      expect(manualPool.getEntry(team)?.status).toBe("active");
+    });
+
     it("acquires only the selected account and never falls back", () => {
       const manualPool = new AccountPool({
         routingMode: "manual",
